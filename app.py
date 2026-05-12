@@ -1,6 +1,10 @@
 from pathlib import Path
 from datetime import datetime
 from io import BytesIO
+import json
+import re
+import urllib.error
+import urllib.request
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pandas as pd
@@ -19,6 +23,9 @@ from bibliographic_processor import (
 
 
 SOURCES = ["ACM", "IEEE", "ScienceDirect", "Springer", "Scopus", "WebOfScience"]
+TOTAL_SCORE_COLUMN = "Total Score"
+CONFIG_FOLDER = Path("config")
+LLM_CONFIG_FILE = CONFIG_FOLDER / "llm_config.json"
 
 
 st.set_page_config(
@@ -32,6 +39,7 @@ st.set_page_config(
 def ensure_workspace():
     INPUT_FOLDER.mkdir(exist_ok=True)
     OUTPUT_FOLDER.mkdir(exist_ok=True)
+    CONFIG_FOLDER.mkdir(exist_ok=True)
     for source in SOURCES:
         (INPUT_FOLDER / source).mkdir(parents=True, exist_ok=True)
 
@@ -229,9 +237,11 @@ def processing_tab():
             "URL": st.column_config.LinkColumn("URL"),
         },
     )
+    update_total_score(edited_df)
     st.session_state["master_df"] = edited_df
 
     if save_edits:
+        update_total_score(edited_df)
         output_file = save_master_dataframe(edited_df)
         st.success(f"Cambios guardados en {output_file}.")
 
@@ -262,6 +272,315 @@ def processing_tab():
             st.dataframe(pd.DataFrame(errors), use_container_width=True, hide_index=True)
 
 
+def criteria_dataframe():
+    criteria = st.session_state.get("criteria", [])
+    return pd.DataFrame(
+        [
+            {"ID": f"C{index}", "Criterio": criterion}
+            for index, criterion in enumerate(criteria, start=1)
+        ]
+    )
+
+
+def score_columns(df):
+    return [
+        column
+        for column in df.columns
+        if re.match(r"^Criterio C\d+ Score:", column)
+    ]
+
+
+def update_total_score(df):
+    columns = score_columns(df)
+    if not columns:
+        df[TOTAL_SCORE_COLUMN] = 0
+        return df
+
+    numeric_scores = df[columns].apply(pd.to_numeric, errors="coerce").fillna(0)
+    df[TOTAL_SCORE_COLUMN] = numeric_scores.sum(axis=1).astype(int)
+    return df
+
+
+def sync_criteria_columns():
+    df = st.session_state.get("master_df", load_master_dataframe())
+    criteria = st.session_state.get("criteria", [])
+    existing_notes = {}
+    existing_scores = {}
+
+    for column in df.columns:
+        match = re.match(r"^Criterio C\d+ (Respuesta|Score): (.+)$", column)
+        if not match:
+            continue
+
+        column_type, criterion_text = match.groups()
+        if column_type == "Respuesta":
+            existing_notes[criterion_text] = df[column].copy()
+        else:
+            existing_scores[criterion_text] = df[column].copy()
+
+    base_columns = [
+        column
+        for column in df.columns
+        if not column.startswith("Criterio C") and column != TOTAL_SCORE_COLUMN
+    ]
+    df = df[base_columns].copy()
+
+    for index, criterion in enumerate(criteria, start=1):
+        response_column = f"Criterio C{index} Respuesta: {criterion}"
+        score_column = f"Criterio C{index} Score: {criterion}"
+        df[response_column] = existing_notes.get(criterion, "")
+        if criterion in existing_scores:
+            df[score_column] = pd.to_numeric(
+                existing_scores[criterion], errors="coerce"
+            ).fillna(0)
+        else:
+            df[score_column] = 0
+
+    update_total_score(df)
+    st.session_state["master_df"] = df
+
+
+def ollama_chat(endpoint, model, prompt):
+    endpoint = endpoint.rstrip("/")
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "options": {"num_ctx": 4096},
+    }
+    request = urllib.request.Request(
+        f"{endpoint}/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(request, timeout=120) as response:
+        body = json.loads(response.read().decode("utf-8"))
+
+    return body.get("message", {}).get("content", "")
+
+
+def extract_json_response(text):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+        if not match:
+            raise ValueError("La respuesta del LLM no contiene JSON.")
+        return json.loads(match.group(0))
+
+
+def build_criterion_prompt(title, abstract, criterion_id, criterion):
+    return f"""
+Evalua un registro bibliografico contra un criterio de seleccion.
+
+Devuelve solamente JSON valido, sin markdown, sin texto adicional.
+
+Escala:
+0 = no cumple.
+1 = lo cumple de manera indirecta o solo se menciona.
+2 = tiene relacion clara con el criterio.
+3 = lo cumple tal cual.
+
+JSON requerido:
+{{
+  "criterio_id": "{criterion_id}",
+  "score": 0,
+  "respuesta": "Explicacion breve de por que cumple o no cumple."
+}}
+
+Criterio:
+{criterion}
+
+Titulo:
+{title}
+
+Abstract:
+{abstract}
+""".strip()
+
+
+def evaluate_row_criterion(endpoint, model, title, abstract, criterion_id, criterion):
+    prompt = build_criterion_prompt(title, abstract, criterion_id, criterion)
+    raw_response = ollama_chat(endpoint, model, prompt)
+    parsed = extract_json_response(raw_response)
+    score = int(parsed.get("score", 0))
+    score = max(0, min(3, score))
+
+    return {
+        "score": score,
+        "respuesta": str(parsed.get("respuesta", "")).strip(),
+        "raw": raw_response,
+    }
+
+
+def load_llm_config():
+    if not LLM_CONFIG_FILE.exists():
+        return {"endpoint": "http://localhost:11434", "model": "llama3.1"}
+
+    try:
+        with open(LLM_CONFIG_FILE, "r", encoding="utf-8") as config_file:
+            config = json.load(config_file)
+    except (OSError, json.JSONDecodeError):
+        return {"endpoint": "http://localhost:11434", "model": "llama3.1"}
+
+    return {
+        "endpoint": config.get("endpoint", "http://localhost:11434"),
+        "model": config.get("model", "llama3.1"),
+    }
+
+
+def save_llm_config(endpoint, model):
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    with open(LLM_CONFIG_FILE, "w", encoding="utf-8") as config_file:
+        json.dump({"endpoint": endpoint, "model": model}, config_file, indent=2)
+
+
+def llm_settings_tab():
+    st.subheader("LLM local/API")
+    st.write(
+        "Configura un endpoint compatible con Ollama para evaluar cada fila sin conservar contexto global."
+    )
+
+    llm_config = load_llm_config()
+    st.session_state.setdefault("ollama_endpoint", llm_config["endpoint"])
+    st.session_state.setdefault("ollama_model", llm_config["model"])
+
+    col_endpoint, col_model = st.columns([2, 1])
+    with col_endpoint:
+        endpoint = st.text_input(
+            "URL o IP con puerto",
+            value=st.session_state["ollama_endpoint"],
+            placeholder="http://localhost:11434",
+        )
+    with col_model:
+        model = st.text_input(
+            "Modelo",
+            value=st.session_state["ollama_model"],
+            placeholder="llama3.1",
+        )
+
+    st.session_state["ollama_endpoint"] = endpoint.strip()
+    st.session_state["ollama_model"] = model.strip()
+
+    col_save_config, col_test = st.columns([1, 1])
+    with col_save_config:
+        if st.button("Guardar configuración", use_container_width=True):
+            save_llm_config(
+                st.session_state["ollama_endpoint"],
+                st.session_state["ollama_model"],
+            )
+            st.success(f"Configuración guardada en {LLM_CONFIG_FILE}.")
+
+    with col_test:
+        test_connection = st.button("Probar conexión", use_container_width=True)
+
+    if test_connection:
+        try:
+            response = ollama_chat(
+                st.session_state["ollama_endpoint"],
+                st.session_state["ollama_model"],
+                'Responde solamente {"ok": true}',
+            )
+            st.success("Conexión recibida.")
+            st.code(response, language="json")
+        except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+            st.error(f"No se pudo consultar el LLM: {exc}")
+
+    st.divider()
+    st.subheader("Evaluar criterios")
+
+    df = st.session_state.get("master_df", load_master_dataframe())
+    criteria = st.session_state.get("criteria", [])
+
+    if df.empty:
+        st.warning("Carga o procesa la tabla maestra antes de evaluar.")
+        return
+
+    if not criteria:
+        st.warning("Añade al menos un criterio antes de evaluar.")
+        return
+
+    sync_criteria_columns()
+    df = st.session_state["master_df"]
+    update_total_score(df)
+
+    criterion_options = {
+        f"C{index}: {criterion}": (index, criterion)
+        for index, criterion in enumerate(criteria, start=1)
+    }
+    selected_criteria = st.multiselect(
+        "Criterios a evaluar",
+        list(criterion_options.keys()),
+        default=list(criterion_options.keys()),
+    )
+
+    col_start, col_limit = st.columns([1, 1])
+    with col_start:
+        start_row = st.number_input("Fila inicial", min_value=1, max_value=len(df), value=1)
+    with col_limit:
+        row_limit = st.number_input(
+            "Cantidad de filas",
+            min_value=1,
+            max_value=len(df),
+            value=min(5, len(df)),
+        )
+    save_each_row = st.checkbox("Guardar Excel al terminar cada fila", value=True)
+
+    if st.button("Ejecutar evaluación LLM", type="primary", use_container_width=True):
+        if not selected_criteria:
+            st.warning("Selecciona al menos un criterio.")
+            return
+
+        start_index = int(start_row) - 1
+        end_index = min(start_index + int(row_limit), len(df))
+        progress = st.progress(0)
+        status = st.empty()
+        total_tasks = (end_index - start_index) * len(selected_criteria)
+        completed = 0
+
+        for row_position in range(start_index, end_index):
+            title = str(df.at[row_position, "Titulo"]) if "Titulo" in df else ""
+            abstract = str(df.at[row_position, "Abstract"]) if "Abstract" in df else ""
+
+            for selected in selected_criteria:
+                criterion_index, criterion = criterion_options[selected]
+                criterion_id = f"C{criterion_index}"
+                response_column = f"Criterio {criterion_id} Respuesta: {criterion}"
+                score_column = f"Criterio {criterion_id} Score: {criterion}"
+                status.write(f"Evaluando fila {row_position + 1}, {criterion_id}...")
+
+                try:
+                    result = evaluate_row_criterion(
+                        st.session_state["ollama_endpoint"],
+                        st.session_state["ollama_model"],
+                        title,
+                        abstract,
+                        criterion_id,
+                        criterion,
+                    )
+                    df.at[row_position, response_column] = result["respuesta"]
+                    df.at[row_position, score_column] = result["score"]
+                except Exception as exc:
+                    df.at[row_position, response_column] = f"Error: {exc}"
+                    df.at[row_position, score_column] = 0
+
+                completed += 1
+                progress.progress(completed / total_tasks)
+
+            update_total_score(df)
+            if save_each_row:
+                save_master_dataframe(df)
+
+        update_total_score(df)
+        st.session_state["master_df"] = df
+        output_file = save_master_dataframe(df)
+        st.success(f"Evaluación guardada en {output_file}.")
+
+    st.session_state["master_df"] = df
+
+
 def criteria_tab():
     st.subheader("Criterios de selección")
     st.write(
@@ -278,20 +597,34 @@ def criteria_tab():
         if st.button("Añadir criterio", use_container_width=True):
             if criterion.strip():
                 st.session_state["criteria"].append(criterion.strip())
+                sync_criteria_columns()
                 st.success("Criterio añadido.")
 
     with col_apply:
-        if st.button("Crear columnas en tabla", use_container_width=True):
-            df = st.session_state.get("master_df", load_master_dataframe())
-            for item in st.session_state["criteria"]:
-                column_name = f"Criterio: {item}"
-                if column_name not in df.columns:
-                    df[column_name] = ""
-            st.session_state["master_df"] = df
-            st.success("Columnas de criterios listas para edición.")
+        if st.button("Sincronizar columnas", use_container_width=True):
+            sync_criteria_columns()
+            st.success("Columnas de criterios sincronizadas.")
 
     if st.session_state["criteria"]:
-        st.table(pd.DataFrame({"Criterio": st.session_state["criteria"]}))
+        st.dataframe(criteria_dataframe(), use_container_width=True, hide_index=True)
+
+        criterion_ids = [f"C{index}" for index in range(1, len(st.session_state["criteria"]) + 1)]
+        delete_id = st.selectbox("Criterio a eliminar", criterion_ids)
+        confirm_delete = st.checkbox(
+            f"Confirmo que quiero eliminar {delete_id}",
+            key="confirm_delete_criterion",
+        )
+
+        if st.button(
+            "Eliminar criterio",
+            disabled=not confirm_delete,
+            use_container_width=True,
+        ):
+            delete_index = int(delete_id.replace("C", "")) - 1
+            removed = st.session_state["criteria"].pop(delete_index)
+            sync_criteria_columns()
+            st.success(f"Se eliminó {delete_id}: {removed}. Los criterios fueron renumerados.")
+            st.rerun()
 
 
 def translation_tab():
@@ -323,13 +656,15 @@ def main():
         st.write("1. Cargar fuentes")
         st.write("2. Procesar y editar")
         st.write("3. Añadir criterios")
-        st.write("4. Traducir contenido")
+        st.write("4. Configurar LLM")
+        st.write("5. Traducir contenido")
 
-    tab_sources, tab_processing, tab_criteria, tab_translation = st.tabs(
+    tab_sources, tab_processing, tab_criteria, tab_llm, tab_translation = st.tabs(
         [
             "Fuentes",
             "Tabla maestra",
             "Criterios",
+            "LLM",
             "Traducción",
         ]
     )
@@ -340,6 +675,8 @@ def main():
         processing_tab()
     with tab_criteria:
         criteria_tab()
+    with tab_llm:
+        llm_settings_tab()
     with tab_translation:
         translation_tab()
 
