@@ -18,6 +18,24 @@ Las dependencias están listadas en `requirements.txt`:
 
 ## Instalación y Despliegue
 
+## Interfaz MVP con Streamlit
+
+La aplicación gratuita/open source para el MVP está en `app.py` y usa Streamlit.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+La interfaz queda organizada en pestañas:
+
+- **Fuentes**: carga archivos `.bib`, `.txt`, `.csv`, `.xls` y `.xlsx` por fuente dentro de `data/<fuente>/`.
+- **Tabla maestra**: procesa todas las fuentes, genera `output/scoping_master.xlsx`, muestra métricas y permite editar la tabla.
+- **Criterios**: prepara criterios escalables y crea columnas nuevas para el cribado por fila.
+- **Traducción**: espacio preparado para traducir columnas como título, abstract y keywords.
+
 ### 🪟 Windows
 
 #### 1. Abrir PowerShell o CMD como Administrador
