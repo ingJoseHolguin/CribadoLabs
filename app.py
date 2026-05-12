@@ -22,10 +22,19 @@ from bibliographic_processor import (
 )
 
 
+def safe_save_master_dataframe(df_to_save):
+    try:
+        return save_master_dataframe(df_to_save)
+    except PermissionError:
+        st.toast("⚠️ No se pudo guardar en Excel. Por favor, cierra el archivo master si lo tienes abierto.", icon="⚠️")
+        return OUTPUT_FOLDER / MASTER_FILENAME
+
+
 SOURCES = ["ACM", "IEEE", "ScienceDirect", "Springer", "Scopus", "WebOfScience"]
 TOTAL_SCORE_COLUMN = "Total Score"
 CONFIG_FOLDER = Path("config")
 LLM_CONFIG_FILE = CONFIG_FOLDER / "llm_config.json"
+CRITERIA_FILE = CONFIG_FOLDER / "criteria.json"
 
 
 st.set_page_config(
@@ -214,7 +223,7 @@ def processing_tab():
             df, errors = process_folder(INPUT_FOLDER)
             st.session_state["master_df"] = df
             st.session_state["processing_errors"] = errors
-            output_file = save_master_dataframe(df)
+            output_file = safe_save_master_dataframe(df)
         st.success(f"Tabla generada en {output_file}.")
 
     if load_existing:
@@ -242,7 +251,7 @@ def processing_tab():
 
     if save_edits:
         update_total_score(edited_df)
-        output_file = save_master_dataframe(edited_df)
+        output_file = safe_save_master_dataframe(edited_df)
         st.success(f"Cambios guardados en {output_file}.")
 
     with st.expander("Limpiar tabla maestra"):
@@ -262,7 +271,7 @@ def processing_tab():
             empty_df = pd.DataFrame(columns=NORMALIZED_COLUMNS)
             st.session_state["master_df"] = empty_df
             st.session_state["processing_errors"] = []
-            output_file = save_master_dataframe(empty_df)
+            output_file = safe_save_master_dataframe(empty_df)
             st.success(f"Tabla maestra limpia guardada en {output_file}.")
             st.rerun()
 
@@ -329,6 +338,7 @@ def sync_criteria_columns():
         response_column = f"Criterio C{index} Respuesta: {criterion}"
         score_column = f"Criterio C{index} Score: {criterion}"
         df[response_column] = existing_notes.get(criterion, "")
+        df[response_column] = df[response_column].astype("object")
         if criterion in existing_scores:
             df[score_column] = pd.to_numeric(
                 existing_scores[criterion], errors="coerce"
@@ -338,6 +348,7 @@ def sync_criteria_columns():
 
     update_total_score(df)
     st.session_state["master_df"] = df
+    safe_save_master_dataframe(df)
 
 
 def ollama_chat(endpoint, model, prompt):
@@ -373,27 +384,27 @@ def extract_json_response(text):
 
 def build_criterion_prompt(title, abstract, criterion_id, criterion):
     return f"""
-Evalua un registro bibliografico contra un criterio de seleccion.
+Evaluate a bibliographic record against a selection criterion.
 
-Devuelve solamente JSON valido, sin markdown, sin texto adicional.
+Return ONLY valid JSON, no markdown, no additional text.
 
-Escala:
-0 = no cumple.
-1 = lo cumple de manera indirecta o solo se menciona.
-2 = tiene relacion clara con el criterio.
-3 = lo cumple tal cual.
+Scale:
+0 = does not meet.
+1 = meets it indirectly or it is only mentioned.
+2 = has a clear relationship with the criterion.
+3 = meets it exactly.
 
-JSON requerido:
+Required JSON:
 {{
   "criterio_id": "{criterion_id}",
   "score": 0,
-  "respuesta": "Explicacion breve de por que cumple o no cumple."
+  "respuesta": "Brief explanation of why it meets or does not meet the criterion."
 }}
 
-Criterio:
+Criterion:
 {criterion}
 
-Titulo:
+Title:
 {title}
 
 Abstract:
@@ -437,6 +448,38 @@ def save_llm_config(endpoint, model):
         json.dump({"endpoint": endpoint, "model": model}, config_file, indent=2)
 
 
+def load_criteria():
+    if not CRITERIA_FILE.exists():
+        return []
+
+    try:
+        with open(CRITERIA_FILE, "r", encoding="utf-8") as config_file:
+            criteria = json.load(config_file)
+            if isinstance(criteria, list):
+                return criteria
+            return []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def save_criteria(criteria):
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    with open(CRITERIA_FILE, "w", encoding="utf-8") as config_file:
+        json.dump(criteria, config_file, indent=2, ensure_ascii=False)
+
+
+@st.cache_data(ttl=10, show_spinner=False)
+def fetch_ollama_models(endpoint):
+    try:
+        endpoint = endpoint.rstrip("/")
+        request = urllib.request.Request(f"{endpoint}/api/tags", method="GET")
+        with urllib.request.urlopen(request, timeout=2) as response:
+            body = json.loads(response.read().decode("utf-8"))
+        return [model["name"] for model in body.get("models", [])]
+    except Exception:
+        return []
+
+
 def llm_settings_tab():
     st.subheader("LLM local/API")
     st.write(
@@ -454,12 +497,25 @@ def llm_settings_tab():
             value=st.session_state["ollama_endpoint"],
             placeholder="http://localhost:11434",
         )
+    
+    available_models = fetch_ollama_models(endpoint.strip())
+    
     with col_model:
-        model = st.text_input(
-            "Modelo",
-            value=st.session_state["ollama_model"],
-            placeholder="llama3.1",
-        )
+        if available_models:
+            current_model = st.session_state["ollama_model"]
+            default_index = available_models.index(current_model) if current_model in available_models else 0
+            model = st.selectbox(
+                "Modelo",
+                options=available_models,
+                index=default_index,
+            )
+        else:
+            model = st.text_input(
+                "Modelo",
+                value=st.session_state["ollama_model"],
+                placeholder="llama3.1",
+                help="Asegúrate de que Ollama esté ejecutándose para ver la lista de modelos.",
+            )
 
     st.session_state["ollama_endpoint"] = endpoint.strip()
     st.session_state["ollama_model"] = model.strip()
@@ -477,16 +533,17 @@ def llm_settings_tab():
         test_connection = st.button("Probar conexión", use_container_width=True)
 
     if test_connection:
-        try:
-            response = ollama_chat(
-                st.session_state["ollama_endpoint"],
-                st.session_state["ollama_model"],
-                'Responde solamente {"ok": true}',
-            )
-            st.success("Conexión recibida.")
-            st.code(response, language="json")
-        except (urllib.error.URLError, TimeoutError, ValueError) as exc:
-            st.error(f"No se pudo consultar el LLM: {exc}")
+        with st.spinner("Conectando con Ollama (esto puede tardar si el modelo se está cargando)..."):
+            try:
+                response = ollama_chat(
+                    st.session_state["ollama_endpoint"],
+                    st.session_state["ollama_model"],
+                    'Responde solamente {"ok": true}',
+                )
+                st.success("Conexión recibida exitosamente.")
+                st.code(response, language="json")
+            except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+                st.error(f"No se pudo consultar el LLM: {exc}")
 
     st.divider()
     st.subheader("Evaluar criterios")
@@ -527,6 +584,7 @@ def llm_settings_tab():
             value=min(5, len(df)),
         )
     save_each_row = st.checkbox("Guardar Excel al terminar cada fila", value=True)
+    skip_evaluated = st.checkbox("Saltar criterios ya evaluados", value=True, help="Si marcas esto, el LLM solo evaluará las celdas que estén vacías para no repetir trabajo.")
 
     if st.button("Ejecutar evaluación LLM", type="primary", use_container_width=True):
         if not selected_criteria:
@@ -535,9 +593,15 @@ def llm_settings_tab():
 
         start_index = int(start_row) - 1
         end_index = min(start_index + int(row_limit), len(df))
-        progress = st.progress(0)
-        status = st.empty()
         total_tasks = (end_index - start_index) * len(selected_criteria)
+        progress_text = f"Progreso: 0/{total_tasks} evaluaciones"
+        progress = st.progress(0.0, text=progress_text)
+        status = st.empty()
+        
+        st.markdown("### Logs en tiempo real")
+        log_container = st.empty()
+        log_text = ""
+        
         completed = 0
 
         for row_position in range(start_index, end_index):
@@ -549,6 +613,19 @@ def llm_settings_tab():
                 criterion_id = f"C{criterion_index}"
                 response_column = f"Criterio {criterion_id} Respuesta: {criterion}"
                 score_column = f"Criterio {criterion_id} Score: {criterion}"
+
+                if skip_evaluated:
+                    existing_response = df.at[row_position, response_column]
+                    if pd.notna(existing_response) and str(existing_response).strip() != "":
+                        completed += 1
+                        progress_text = f"Progreso: {completed}/{total_tasks} evaluaciones"
+                        progress.progress(completed / total_tasks, text=progress_text)
+                        
+                        log_entry = f"⏭️ Fila {row_position + 1} | {criterion_id} -> Ya evaluado (omitido)\n\n"
+                        log_text += log_entry
+                        log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
+                        continue
+
                 status.write(f"Evaluando fila {row_position + 1}, {criterion_id}...")
 
                 try:
@@ -560,22 +637,34 @@ def llm_settings_tab():
                         criterion_id,
                         criterion,
                     )
-                    df.at[row_position, response_column] = result["respuesta"]
-                    df.at[row_position, score_column] = result["score"]
+                    score = result["score"]
+                    respuesta = result["respuesta"]
+                    
+                    df.at[row_position, response_column] = respuesta
+                    df.at[row_position, score_column] = score
+                    
+                    log_entry = f"✅ Fila {row_position + 1} | {criterion_id} -> Score: {score} | {respuesta}\n\n"
+                    log_text += log_entry
+                    log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
                 except Exception as exc:
                     df.at[row_position, response_column] = f"Error: {exc}"
                     df.at[row_position, score_column] = 0
+                    
+                    log_entry = f"❌ Fila {row_position + 1} | {criterion_id} -> Error: {exc}\n\n"
+                    log_text += log_entry
+                    log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
 
                 completed += 1
-                progress.progress(completed / total_tasks)
+                progress_text = f"Progreso: {completed}/{total_tasks} evaluaciones"
+                progress.progress(completed / total_tasks, text=progress_text)
 
             update_total_score(df)
             if save_each_row:
-                save_master_dataframe(df)
+                safe_save_master_dataframe(df)
 
         update_total_score(df)
         st.session_state["master_df"] = df
-        output_file = save_master_dataframe(df)
+        output_file = safe_save_master_dataframe(df)
         st.success(f"Evaluación guardada en {output_file}.")
 
     st.session_state["master_df"] = df
@@ -587,18 +676,26 @@ def criteria_tab():
         "Aquí se preparará la iteración por fila. Cada criterio creará una nueva columna escalable."
     )
 
-    if "criteria" not in st.session_state:
-        st.session_state["criteria"] = []
+    def handle_add_criterion():
+        val = st.session_state.get("new_criterion_input", "").strip()
+        if val:
+            st.session_state["criteria"].append(val)
+            save_criteria(st.session_state["criteria"])
+            sync_criteria_columns()
+        st.session_state["new_criterion_input"] = ""
 
-    criterion = st.text_input("Nuevo criterio", placeholder="Ej. Incluye población adulta")
+    if "new_criterion_input" not in st.session_state:
+        st.session_state["new_criterion_input"] = ""
+
+    st.text_input(
+        "Nuevo criterio", 
+        placeholder="Ej. Incluye población adulta", 
+        key="new_criterion_input"
+    )
     col_add, col_apply = st.columns([1, 1])
 
     with col_add:
-        if st.button("Añadir criterio", use_container_width=True):
-            if criterion.strip():
-                st.session_state["criteria"].append(criterion.strip())
-                sync_criteria_columns()
-                st.success("Criterio añadido.")
+        st.button("Añadir criterio", use_container_width=True, on_click=handle_add_criterion)
 
     with col_apply:
         if st.button("Sincronizar columnas", use_container_width=True):
@@ -622,6 +719,7 @@ def criteria_tab():
         ):
             delete_index = int(delete_id.replace("C", "")) - 1
             removed = st.session_state["criteria"].pop(delete_index)
+            save_criteria(st.session_state["criteria"])
             sync_criteria_columns()
             st.success(f"Se eliminó {delete_id}: {removed}. Los criterios fueron renumerados.")
             st.rerun()
@@ -647,6 +745,9 @@ def translation_tab():
 
 def main():
     ensure_workspace()
+
+    if "criteria" not in st.session_state:
+        st.session_state["criteria"] = load_criteria()
 
     st.title("CribadoLabs")
     st.caption("MVP para cargar fuentes, consolidar registros y preparar cribado académico.")
