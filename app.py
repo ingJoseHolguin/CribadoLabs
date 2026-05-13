@@ -357,7 +357,15 @@ def ollama_chat(endpoint, model, prompt):
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "options": {"num_ctx": 4096},
+        "format": "json",
+        "options": {
+            "num_ctx": 4096,
+            "temperature": 0.0,
+            "top_p": 0.0,
+            "repeat_penalty": 1.0,
+            "num_predict": 256,
+            "stop": ["}", "```", "\n\n"]
+        },
     }
     request = urllib.request.Request(
         f"{endpoint}/api/chat",
@@ -373,11 +381,21 @@ def ollama_chat(endpoint, model, prompt):
 
 
 def extract_json_response(text):
+    text = text.strip()
+    if text.startswith("{") and not text.endswith("}"):
+        text += "}"
+
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", text, flags=re.DOTALL)
         if not match:
+            match_open = re.search(r"\{.*", text, flags=re.DOTALL)
+            if match_open:
+                try:
+                    return json.loads(match_open.group(0) + "}")
+                except json.JSONDecodeError:
+                    pass
             raise ValueError("La respuesta del LLM no contiene JSON.")
         return json.loads(match.group(0))
 
