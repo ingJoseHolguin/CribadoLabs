@@ -1,7 +1,8 @@
 [
-  "El titulo u abstrac hablan sobre la calidad de la colaboracion?",
-  "el objeto de estudio es un software, framework, artecato o algoritmo?",
-  "evalúan la propuesta?",
-  "se menciona sobre alguna métrica o equivalente para la calidad de le colaboración",
-  "la colaboracion de los usuarios es cara a cara o colocalizada?"
+  "Addresses face-to-face or co-located human-human collaboration.",
+  "Evaluates collaboration quality or collaborative effectiveness.",
+  "Includes a computational artifact, collaborative system, or software tool.",
+  "Focuses on human-human collaboration rather than human-AI or human-robot interaction.",
+  "Uses metrics, indicators, or evaluation methods to assess collaboration.",
+  "Evaluates the proposal"
 ]

@@ -3,6 +3,7 @@ from datetime import datetime
 from io import BytesIO
 import json
 import re
+import time
 import urllib.error
 import urllib.request
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -210,13 +211,17 @@ def sources_tab():
 def processing_tab():
     st.subheader("Procesar y editar tabla maestra")
 
-    col_run, col_load, col_save = st.columns([1, 1, 1])
+    col_run, col_load, col_save, col_refresh = st.columns([1, 1, 1, 1])
     with col_run:
         run_processing = st.button("Procesar fuentes", type="primary", use_container_width=True)
     with col_load:
         load_existing = st.button("Cargar Excel existente", use_container_width=True)
     with col_save:
         save_edits = st.button("Guardar edición", use_container_width=True)
+    with col_refresh:
+        if st.button("Actualizar vista", use_container_width=True):
+            st.session_state["master_df"] = load_master_dataframe(OUTPUT_FOLDER / MASTER_FILENAME)
+            st.rerun()
 
     if run_processing:
         with st.spinner("Leyendo fuentes y normalizando registros..."):
@@ -295,7 +300,7 @@ def score_columns(df):
     return [
         column
         for column in df.columns
-        if re.match(r"^Criterio C\d+ Score:", column)
+        if re.match(r"^(C\d+ Total|Criterio C\d+ Final Score:|Criterio C\d+ Score:)", column)
     ]
 
 
@@ -313,45 +318,105 @@ def update_total_score(df):
 def sync_criteria_columns():
     df = st.session_state.get("master_df", load_master_dataframe())
     criteria = st.session_state.get("criteria", [])
-    existing_notes = {}
-    existing_scores = {}
+    
+    existing_data = {
+        "Respuesta": {},
+        "Semantic": {},
+        "Context": {},
+        "Centrality": {},
+        "Evidence": {},
+        "Penalty": {},
+        "Total": {}
+    }
 
     for column in df.columns:
-        match = re.match(r"^Criterio C\d+ (Respuesta|Score): (.+)$", column)
-        if not match:
-            continue
-
-        column_type, criterion_text = match.groups()
-        if column_type == "Respuesta":
-            existing_notes[criterion_text] = df[column].copy()
-        else:
-            existing_scores[criterion_text] = df[column].copy()
+        match_new = re.match(r"^(C\d+) (Semantic|Context|Centrality|Evidence|Penalty|Total)$", column)
+        match_resp = re.match(r"^(C\d+) Respuesta(?:|: (.+))$", column)
+        match_old = re.match(r"^Criterio (C\d+) (Semantic|Context|Centrality|Evidence|Penalty|Final Score|Respuesta|Score): (.+)$", column)
+        
+        if match_new:
+            c_index, col_type = match_new.groups()
+            existing_data[col_type][c_index] = df[column].copy()
+        elif match_resp:
+            c_index, _ = match_resp.groups()
+            existing_data["Respuesta"][c_index] = df[column].copy()
+        elif match_old:
+            c_index, col_type, _ = match_old.groups()
+            if col_type == "Final Score" or col_type == "Score":
+                col_type = "Total"
+            existing_data[col_type][c_index] = df[column].copy()
 
     base_columns = [
         column
         for column in df.columns
-        if not column.startswith("Criterio C") and column != TOTAL_SCORE_COLUMN
+        if not re.match(r"^(C\d+ |Criterio C\d+ )", column) and column != TOTAL_SCORE_COLUMN
     ]
     df = df[base_columns].copy()
 
     for index, criterion in enumerate(criteria, start=1):
-        response_column = f"Criterio C{index} Respuesta: {criterion}"
-        score_column = f"Criterio C{index} Score: {criterion}"
-        df[response_column] = existing_notes.get(criterion, "")
-        df[response_column] = df[response_column].astype("object")
-        if criterion in existing_scores:
-            df[score_column] = pd.to_numeric(
-                existing_scores[criterion], errors="coerce"
-            ).fillna(0)
-        else:
-            df[score_column] = 0
+        c_index = f"C{index}"
+        
+        # 1. Respuesta always first
+        response_col = f"{c_index} Respuesta: {criterion}"
+        df[response_col] = existing_data["Respuesta"].get(c_index, "")
+        df[response_col] = df[response_col].astype("object")
+        
+        # 2. Subscore columns and Total
+        for col_type in ["Semantic", "Context", "Centrality", "Evidence", "Penalty", "Total"]:
+            col_name = f"{c_index} {col_type}"
+            if c_index in existing_data[col_type]:
+                df[col_name] = pd.to_numeric(
+                    existing_data[col_type][c_index], errors="coerce"
+                ).fillna(0)
+            else:
+                df[col_name] = 0
 
     update_total_score(df)
     st.session_state["master_df"] = df
     safe_save_master_dataframe(df)
 
 
-def ollama_chat(endpoint, model, prompt):
+def llm_chat(provider, endpoint, model, api_key, prompt):
+    if provider == "OpenRouter":
+        is_auto_free = model.strip().lower() == "openrouter/auto:free"
+        api_model = "openrouter/auto" if is_auto_free else model
+        
+        payload = {
+            "model": api_model,
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": {"type": "json_object"}
+        }
+        
+        if is_auto_free:
+            payload["plugins"] = [
+                {
+                    "id": "auto-router",
+                    "allowed_models": ["*/*:free"]
+                }
+            ]
+
+        request = urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            method="POST",
+        )
+
+        for attempt in range(6):
+            try:
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                return body.get("choices", [{}])[0].get("message", {}).get("content", "")
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < 5:
+                    time.sleep(3 + (2 ** attempt))  # 4s, 5s, 7s, 11s, 19s
+                    continue
+                raise
+
+    # Default to Ollama
     endpoint = endpoint.rstrip("/")
     payload = {
         "model": model,
@@ -363,8 +428,7 @@ def ollama_chat(endpoint, model, prompt):
             "temperature": 0.0,
             "top_p": 0.0,
             "repeat_penalty": 1.0,
-            "num_predict": 256,
-            "stop": ["}", "```", "\n\n"]
+            "num_predict": 1024
         },
     }
     request = urllib.request.Request(
@@ -402,68 +466,232 @@ def extract_json_response(text):
 
 def build_criterion_prompt(title, abstract, criterion_id, criterion):
     return f"""
-Evaluate a bibliographic record against a selection criterion.
+You are a strict scientific screening assistant.
 
-Return ONLY valid JSON, no markdown, no additional text.
+Your task is to evaluate whether a bibliographic record satisfies a selection criterion.
 
-Scale:
-0 = does not meet.
-1 = meets it indirectly or it is only mentioned.
-2 = has a clear relationship with the criterion.
-3 = meets it exactly.
+IMPORTANT RULES:
 
-Required JSON:
+* Be conservative and strict.
+* Do NOT infer missing information.
+* Do NOT assume relevance from isolated keywords alone.
+* Evaluate semantic meaning, context, and centrality carefully.
+* Penalize ambiguity and scope deviations.
+* The criterion must be supported by explicit textual evidence.
+* Return STRICT JSON ONLY.
+* No markdown.
+* No explanations outside JSON.
+
+EVALUATION PROCESS:
+
+1. Extract evidence from title and abstract.
+2. Evaluate each scoring dimension independently.
+3. Compute the final score.
+4. Assign a decision.
+
+---
+
+## SCORING DIMENSIONS
+
+1. semantic_match
+   Measures semantic similarity between the criterion and the article content.
+
+0 = unrelated or absent
+1 = weak conceptual overlap
+2 = related conceptually
+3 = strongly aligned semantically
+
+2. context_alignment
+   Measures whether the article context matches the intended criterion context.
+
+Examples:
+
+* population
+* domain
+* environment
+* interaction type
+* human-human vs human-AI
+
+0 = wrong context
+1 = partially aligned
+2 = mostly aligned
+3 = fully aligned
+
+3. centrality
+   Measures whether the criterion is central to the paper.
+
+0 = absent
+1 = incidental mention
+2 = secondary topic
+3 = primary focus
+
+4. evidence_strength
+   Measures how explicit and strong the textual evidence is.
+
+0 = speculative or unclear
+1 = implied
+2 = explicit
+3 = strongly emphasized
+
+5. exclusion_penalty
+   Penalizes important deviations from the intended scope.
+
+0 = no penalty
+-1 = mild mismatch
+-2 = important mismatch
+-3 = strong exclusion signal
+
+---
+
+## FINAL SCORE
+
+final_score =
+semantic_match +
+context_alignment +
+centrality +
+evidence_strength +
+exclusion_penalty
+
+---
+
+## DECISION RULES
+
+0-3 = exclude
+4-7 = manual_review
+8-12 = include
+
+---
+
+## RESPONSE GUIDELINES
+
+The "response" field MUST be a detailed, structured narrative summary (in English).
+Do NOT just output "include", "exclude", or a single word.
+Your summary MUST explicitly explain:
+1. What specific evidence was found in the text.
+2. Which scoring dimension was the most critical for the final decision.
+3. The logical justification for the final inclusion/exclusion decision.
+
+---
+
+## REQUIRED JSON FORMAT
+
 {{
-  "criterio_id": "{criterion_id}",
-  "score": 0,
-  "respuesta": "Brief explanation of why it meets or does not meet the criterion."
+"criterion_id": "{criterion_id}",
+
+"evidence": {{
+"matched_concepts": [],
+"context_detected": "",
+"exclusion_signals": []
+}},
+
+"semantic_match": {{
+"score": 0,
+"reason": ""
+}},
+
+"context_alignment": {{
+"score": 0,
+"reason": ""
+}},
+
+"centrality": {{
+"score": 0,
+"reason": ""
+}},
+
+"evidence_strength": {{
+"score": 0,
+"reason": ""
+}},
+
+"exclusion_penalty": {{
+"score": 0,
+"reason": ""
+}},
+
+"final_score": 0,
+
+"decision": "exclude",
+
+"confidence": 0.0,
+
+"response": ""
 }}
 
-Criterion:
+---
+
+## CRITERION
+
 {criterion}
 
-Title:
+---
+
+## TITLE
+
 {title}
 
-Abstract:
+---
+
+## ABSTRACT
+
 {abstract}
 """.strip()
 
 
-def evaluate_row_criterion(endpoint, model, title, abstract, criterion_id, criterion):
+def evaluate_row_criterion(provider, endpoint, model, api_key, title, abstract, criterion_id, criterion):
     prompt = build_criterion_prompt(title, abstract, criterion_id, criterion)
-    raw_response = ollama_chat(endpoint, model, prompt)
+    raw_response = llm_chat(provider, endpoint, model, api_key, prompt)
     parsed = extract_json_response(raw_response)
-    score = int(parsed.get("score", 0))
-    score = max(0, min(3, score))
+
+    def get_score(field):
+        val = parsed.get(field, {})
+        if isinstance(val, dict):
+            return int(val.get("score", 0))
+        return int(val) if val else 0
+
+    semantic = get_score("semantic_match")
+    context = get_score("context_alignment")
+    centrality = get_score("centrality")
+    evidence = get_score("evidence_strength")
+    penalty = get_score("exclusion_penalty")
+    
+    final_score = semantic + context + centrality + evidence + penalty
 
     return {
-        "score": score,
-        "respuesta": str(parsed.get("respuesta", "")).strip(),
+        "semantic_match": semantic,
+        "context_alignment": context,
+        "centrality": centrality,
+        "evidence_strength": evidence,
+        "exclusion_penalty": penalty,
+        "final_score": final_score,
+        "respuesta": str(parsed.get("response", "")).strip(),
         "raw": raw_response,
     }
 
 
 def load_llm_config():
+    default_config = {"provider": "Ollama", "endpoint": "http://localhost:11434", "model": "llama3.1", "api_key": ""}
     if not LLM_CONFIG_FILE.exists():
-        return {"endpoint": "http://localhost:11434", "model": "llama3.1"}
+        return default_config
 
     try:
         with open(LLM_CONFIG_FILE, "r", encoding="utf-8") as config_file:
             config = json.load(config_file)
     except (OSError, json.JSONDecodeError):
-        return {"endpoint": "http://localhost:11434", "model": "llama3.1"}
+        return default_config
 
     return {
+        "provider": config.get("provider", "Ollama"),
         "endpoint": config.get("endpoint", "http://localhost:11434"),
         "model": config.get("model", "llama3.1"),
+        "api_key": config.get("api_key", ""),
     }
 
 
-def save_llm_config(endpoint, model):
+def save_llm_config(provider, endpoint, model, api_key):
     CONFIG_FOLDER.mkdir(exist_ok=True)
     with open(LLM_CONFIG_FILE, "w", encoding="utf-8") as config_file:
-        json.dump({"endpoint": endpoint, "model": model}, config_file, indent=2)
+        json.dump({"provider": provider, "endpoint": endpoint, "model": model, "api_key": api_key}, config_file, indent=2)
 
 
 def load_criteria():
@@ -501,49 +729,73 @@ def fetch_ollama_models(endpoint):
 def llm_settings_tab():
     st.subheader("LLM local/API")
     st.write(
-        "Configura un endpoint compatible con Ollama para evaluar cada fila sin conservar contexto global."
+        "Configura un proveedor (Ollama local o OpenRouter API) para evaluar cada fila sin conservar contexto global."
     )
 
     llm_config = load_llm_config()
+    st.session_state.setdefault("llm_provider", llm_config["provider"])
     st.session_state.setdefault("ollama_endpoint", llm_config["endpoint"])
     st.session_state.setdefault("ollama_model", llm_config["model"])
+    st.session_state.setdefault("llm_api_key", llm_config["api_key"])
 
-    col_endpoint, col_model = st.columns([2, 1])
-    with col_endpoint:
-        endpoint = st.text_input(
-            "URL o IP con puerto",
-            value=st.session_state["ollama_endpoint"],
-            placeholder="http://localhost:11434",
-        )
-    
-    available_models = fetch_ollama_models(endpoint.strip())
-    
-    with col_model:
-        if available_models:
-            current_model = st.session_state["ollama_model"]
-            default_index = available_models.index(current_model) if current_model in available_models else 0
-            model = st.selectbox(
-                "Modelo",
-                options=available_models,
-                index=default_index,
+    provider = st.radio("Proveedor de LLM", ["Ollama", "OpenRouter"], horizontal=True, index=0 if st.session_state["llm_provider"] == "Ollama" else 1)
+    st.session_state["llm_provider"] = provider
+
+    if provider == "Ollama":
+        col_endpoint, col_model = st.columns([2, 1])
+        with col_endpoint:
+            endpoint = st.text_input(
+                "URL o IP con puerto (Ollama)",
+                value=st.session_state["ollama_endpoint"],
+                placeholder="http://localhost:11434",
             )
-        else:
+        
+        available_models = fetch_ollama_models(endpoint.strip())
+        
+        with col_model:
+            if available_models:
+                current_model = st.session_state["ollama_model"]
+                default_index = available_models.index(current_model) if current_model in available_models else 0
+                model = st.selectbox(
+                    "Modelo",
+                    options=available_models,
+                    index=default_index,
+                )
+            else:
+                model = st.text_input(
+                    "Modelo",
+                    value=st.session_state["ollama_model"],
+                    placeholder="llama3.1",
+                    help="Asegúrate de que Ollama esté ejecutándose para ver la lista de modelos.",
+                )
+        st.session_state["ollama_endpoint"] = endpoint.strip()
+    else:
+        # OpenRouter
+        col_model, col_key = st.columns([1, 2])
+        with col_model:
             model = st.text_input(
-                "Modelo",
+                "Modelo OpenRouter",
                 value=st.session_state["ollama_model"],
-                placeholder="llama3.1",
-                help="Asegúrate de que Ollama esté ejecutándose para ver la lista de modelos.",
+                placeholder="openai/gpt-4o-mini",
             )
+        with col_key:
+            api_key = st.text_input(
+                "API Key OpenRouter",
+                value=st.session_state["llm_api_key"],
+                type="password"
+            )
+        st.session_state["llm_api_key"] = api_key.strip()
 
-    st.session_state["ollama_endpoint"] = endpoint.strip()
     st.session_state["ollama_model"] = model.strip()
 
     col_save_config, col_test = st.columns([1, 1])
     with col_save_config:
         if st.button("Guardar configuración", use_container_width=True):
             save_llm_config(
+                st.session_state["llm_provider"],
                 st.session_state["ollama_endpoint"],
                 st.session_state["ollama_model"],
+                st.session_state["llm_api_key"]
             )
             st.success(f"Configuración guardada en {LLM_CONFIG_FILE}.")
 
@@ -551,16 +803,18 @@ def llm_settings_tab():
         test_connection = st.button("Probar conexión", use_container_width=True)
 
     if test_connection:
-        with st.spinner("Conectando con Ollama (esto puede tardar si el modelo se está cargando)..."):
+        with st.spinner(f"Conectando con {provider} (esto puede tardar si el modelo se está cargando)..."):
             try:
-                response = ollama_chat(
+                response = llm_chat(
+                    st.session_state["llm_provider"],
                     st.session_state["ollama_endpoint"],
                     st.session_state["ollama_model"],
+                    st.session_state["llm_api_key"],
                     'Responde solamente {"ok": true}',
                 )
                 st.success("Conexión recibida exitosamente.")
                 st.code(response, language="json")
-            except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+            except Exception as exc:
                 st.error(f"No se pudo consultar el LLM: {exc}")
 
     st.divider()
@@ -604,7 +858,27 @@ def llm_settings_tab():
     save_each_row = st.checkbox("Guardar Excel al terminar cada fila", value=True)
     skip_evaluated = st.checkbox("Saltar criterios ya evaluados", value=True, help="Si marcas esto, el LLM solo evaluará las celdas que estén vacías para no repetir trabajo.")
 
-    if st.button("Ejecutar evaluación LLM", type="primary", use_container_width=True):
+    col_run_llm, col_clear_llm = st.columns([2, 1])
+    with col_run_llm:
+        run_llm = st.button("Ejecutar evaluación LLM", type="primary", use_container_width=True)
+    with col_clear_llm:
+        with st.popover("Limpiar evaluaciones"):
+            st.warning("Esto borrará las puntuaciones y respuestas actuales para reiniciar la evaluación.")
+            if st.button("Confirmar borrado", type="primary", use_container_width=True):
+                for index, criterion in enumerate(criteria, start=1):
+                    col_response = f"C{index} Respuesta: {criterion}"
+                    if col_response in df.columns:
+                        df[col_response] = ""
+                    for sub in ["Semantic", "Context", "Centrality", "Evidence", "Penalty", "Total"]:
+                        col_sub = f"C{index} {sub}"
+                        if col_sub in df.columns:
+                            df[col_sub] = 0
+                update_total_score(df)
+                st.session_state["master_df"] = df
+                safe_save_master_dataframe(df)
+                st.rerun()
+
+    if run_llm:
         if not selected_criteria:
             st.warning("Selecciona al menos un criterio.")
             return
@@ -629,44 +903,53 @@ def llm_settings_tab():
             for selected in selected_criteria:
                 criterion_index, criterion = criterion_options[selected]
                 criterion_id = f"C{criterion_index}"
-                response_column = f"Criterio {criterion_id} Respuesta: {criterion}"
-                score_column = f"Criterio {criterion_id} Score: {criterion}"
+                col_response = f"C{criterion_index} Respuesta: {criterion}"
+                col_semantic = f"C{criterion_index} Semantic"
+                col_context = f"C{criterion_index} Context"
+                col_centrality = f"C{criterion_index} Centrality"
+                col_evidence = f"C{criterion_index} Evidence"
+                col_penalty = f"C{criterion_index} Penalty"
+                col_final = f"C{criterion_index} Total"
 
                 if skip_evaluated:
-                    existing_response = df.at[row_position, response_column]
+                    existing_response = df.at[row_position, col_response]
                     if pd.notna(existing_response) and str(existing_response).strip() != "":
                         completed += 1
                         progress_text = f"Progreso: {completed}/{total_tasks} evaluaciones"
                         progress.progress(completed / total_tasks, text=progress_text)
                         
-                        log_entry = f"⏭️ Fila {row_position + 1} | {criterion_id} -> Ya evaluado (omitido)\n\n"
+                        log_entry = f"⏭️ Fila {row_position + 1} | C{criterion_index} -> Ya evaluado (omitido)\n\n"
                         log_text += log_entry
                         log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
                         continue
 
-                status.write(f"Evaluando fila {row_position + 1}, {criterion_id}...")
+                status.write(f"Evaluando fila {row_position + 1}, C{criterion_index}...")
 
                 try:
                     result = evaluate_row_criterion(
+                        st.session_state["llm_provider"],
                         st.session_state["ollama_endpoint"],
                         st.session_state["ollama_model"],
+                        st.session_state["llm_api_key"],
                         title,
                         abstract,
                         criterion_id,
                         criterion,
                     )
-                    score = result["score"]
-                    respuesta = result["respuesta"]
+                    df.at[row_position, col_response] = result["respuesta"]
+                    df.at[row_position, col_semantic] = result["semantic_match"]
+                    df.at[row_position, col_context] = result["context_alignment"]
+                    df.at[row_position, col_centrality] = result["centrality"]
+                    df.at[row_position, col_evidence] = result["evidence_strength"]
+                    df.at[row_position, col_penalty] = result["exclusion_penalty"]
+                    df.at[row_position, col_final] = result["final_score"]
                     
-                    df.at[row_position, response_column] = respuesta
-                    df.at[row_position, score_column] = score
-                    
-                    log_entry = f"✅ Fila {row_position + 1} | {criterion_id} -> Score: {score} | {respuesta}\n\n"
+                    log_entry = f"✅ Fila {row_position + 1} | C{criterion_index} -> Total: {result['final_score']} | {result['respuesta']}\n\n"
                     log_text += log_entry
                     log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
                 except Exception as exc:
-                    df.at[row_position, response_column] = f"Error: {exc}"
-                    df.at[row_position, score_column] = 0
+                    df.at[row_position, col_response] = f"Error: {exc}"
+                    df.at[row_position, col_final] = 0
                     
                     log_entry = f"❌ Fila {row_position + 1} | {criterion_id} -> Error: {exc}\n\n"
                     log_text += log_entry
