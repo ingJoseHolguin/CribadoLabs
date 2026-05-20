@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 import bibtexparser
 import pandas as pd
@@ -10,10 +11,12 @@ MASTER_FILENAME = "scoping_master.xlsx"
 
 NORMALIZED_COLUMNS = [
     "Fuente",
-    "Titulo",
-    "Autor",
     "Año",
+    "Autor",
+    "Titulo",
     "Abstract",
+    "Titulo ES",
+    "Abstract ES",
     "TipoDocumento",
     "DOI",
     "Keywords",
@@ -27,10 +30,12 @@ SUPPORTED_EXTENSIONS = [".bib", ".txt", ".csv", ".xls", ".xlsx"]
 def normalize_row(row, fuente):
     return {
         "Fuente": fuente,
-        "Titulo": row.get("Titulo", ""),
-        "Autor": row.get("Autor", ""),
         "Año": row.get("Año", ""),
+        "Autor": row.get("Autor", ""),
+        "Titulo": row.get("Titulo", ""),
         "Abstract": row.get("Abstract", ""),
+        "Titulo ES": row.get("Titulo ES", ""),
+        "Abstract ES": row.get("Abstract ES", ""),
         "TipoDocumento": row.get("TipoDocumento", ""),
         "DOI": row.get("DOI", ""),
         "Keywords": row.get("Keywords", ""),
@@ -210,7 +215,23 @@ def save_master_dataframe(df, output_folder=OUTPUT_FOLDER, filename=MASTER_FILEN
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
     output_file = output_folder / filename
-    df.to_excel(output_file, index=False)
+    
+    # Escribir primero en un archivo temporal para evitar corromper el original si falla
+    temp_file = output_file.with_suffix(".tmp.xlsx")
+    df.to_excel(temp_file, index=False)
+    
+    # Reemplazo atómico
+    if temp_file.exists():
+        if output_file.exists():
+            try:
+                os.replace(temp_file, output_file)
+            except Exception:
+                # Fallback si os.replace falla (ej. bloqueos en Windows)
+                import shutil
+                shutil.move(str(temp_file), str(output_file))
+        else:
+            temp_file.rename(output_file)
+            
     return output_file
 
 
@@ -219,4 +240,23 @@ def load_master_dataframe(path=OUTPUT_FOLDER / MASTER_FILENAME):
     if not path.exists():
         return pd.DataFrame(columns=NORMALIZED_COLUMNS)
 
-    return pd.read_excel(path)
+    try:
+        df = pd.read_excel(path)
+    except Exception as e:
+        raise RuntimeError(
+            f"El archivo '{path.name}' está dañado o incompleto (se interrumpió la escritura). "
+            f"Hemos creado una copia de seguridad de la versión dañada en 'output/scoping_master_corrupted.xlsx'. "
+            f"Puedes recuperarlo desde tu Git o volver a procesar tu carpeta de origen. Error original: {e}"
+        )
+    
+    # Asegurar que todas las columnas de la especificación existan en el DataFrame cargado
+    for col in NORMALIZED_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
+            
+    # Asegurar que el nuevo orden de columnas se aplique a archivos existentes
+    existing_cols = list(df.columns)
+    ordered_base_cols = [col for col in NORMALIZED_COLUMNS if col in existing_cols]
+    extra_cols = [col for col in existing_cols if col not in ordered_base_cols]
+    
+    return df[ordered_base_cols + extra_cols]

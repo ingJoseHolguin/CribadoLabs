@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import datetime
 from io import BytesIO
 import json
+import os
 import re
 import time
 import urllib.error
@@ -374,6 +375,70 @@ def sync_criteria_columns():
     update_total_score(df)
     st.session_state["master_df"] = df
     safe_save_master_dataframe(df)
+
+
+def verify_cuda_working():
+    import subprocess
+    import sys
+    try:
+        # Ejecutar en un subproceso rápido para evitar bloquear hilos en Streamlit en caso de error
+        cmd = [
+            sys.executable,
+            "-c",
+            "import os; os.environ['ARGOS_DEVICE_TYPE']='cuda'; import argostranslate.translate; "
+            "installed = argostranslate.translate.get_installed_languages(); "
+            "from_l = next(filter(lambda x: x.code == 'en', installed), None); "
+            "to_l = next(filter(lambda x: x.code == 'es', installed), None); "
+            "from_l.get_translation(to_l).translate('test') if (from_l and to_l) else None"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def get_argos_translator(from_code="en", to_code="es", device="auto"):
+    if device in ("cuda", "auto"):
+        # Verificar si CUDA realmente funciona en el sistema
+        if not verify_cuda_working():
+            st.warning("⚠️ La aceleración GPU (CUDA) no está disponible o le faltan dependencias del sistema (ej. cublas64_12.dll). Cambiando a traducción por CPU de forma automática.")
+            device = "cpu"
+
+    # Configurar el tipo de dispositivo antes de importar argostranslate
+    os.environ["ARGOS_DEVICE_TYPE"] = device
+    
+    import argostranslate.package
+    import argostranslate.translate
+    
+    installed_languages = argostranslate.translate.get_installed_languages()
+    from_lang = next(filter(lambda x: x.code == from_code, installed_languages), None)
+    to_lang = next(filter(lambda x: x.code == to_code, installed_languages), None)
+    
+    translation = None
+    if from_lang and to_lang:
+        translation = from_lang.get_translation(to_lang)
+        
+    if translation is None:
+        argostranslate.package.update_package_index()
+        available_packages = argostranslate.package.get_available_packages()
+        package_to_install = next(
+            filter(
+                lambda x: x.from_code == from_code and x.to_code == to_code,
+                available_packages
+            ), None
+        )
+        if package_to_install:
+            download_path = package_to_install.download()
+            argostranslate.package.install_from_path(download_path)
+            
+            # Recargar lenguajes
+            installed_languages = argostranslate.translate.get_installed_languages()
+            from_lang = next(filter(lambda x: x.code == from_code, installed_languages), None)
+            to_lang = next(filter(lambda x: x.code == to_code, installed_languages), None)
+            if from_lang and to_lang:
+                translation = from_lang.get_translation(to_lang)
+                
+    return translation
 
 
 def llm_chat(provider, endpoint, model, api_key, prompt):
@@ -1027,21 +1092,126 @@ def criteria_tab():
 
 
 def translation_tab():
-    st.subheader("Traducción de tabla")
+    st.subheader("Traducción Offline de Tabla (Argos Translate)")
     st.write(
-        "Espacio reservado para traducir campos como título, abstract y keywords dentro de la tabla."
+        "Traduce los campos **Titulo** y **Abstract** al Español de manera 100% offline. "
+        "Los resultados se guardarán en las columnas **Titulo ES** y **Abstract ES** respectivamente."
     )
 
     df = st.session_state.get("master_df", load_master_dataframe())
-    selected_columns = st.multiselect(
-        "Columnas a traducir",
-        [column for column in df.columns if column in NORMALIZED_COLUMNS],
-        default=[column for column in ["Titulo", "Abstract", "Keywords"] if column in df.columns],
+    
+    if df.empty:
+        st.warning("No hay registros en la tabla maestra para traducir.")
+        return
+
+    # Opciones de aceleración
+    st.markdown("### Configuración de Aceleración")
+    device_type = st.radio(
+        "Seleccionar dispositivo de procesamiento (Aceleración GPU):",
+        options=["auto", "cpu", "cuda"],
+        index=0,
+        help=(
+            "auto: Detecta y usa GPU si está disponible.\n"
+            "cpu: Usa el procesador principal (más lento pero compatible con todo).\n"
+            "cuda: Fuerza el uso de GPU NVIDIA (requiere drivers CUDA instalados)."
+        ),
+        horizontal=True
     )
-    target_language = st.selectbox("Idioma destino", ["Español", "Inglés", "Portugués"])
-    st.info(
-        f"Próximo paso: conectar un traductor local/gratuito o API opcional para {len(selected_columns)} columna(s) hacia {target_language}."
-    )
+
+    def is_empty_value(val):
+        if pd.isna(val):
+            return True
+        s = str(val).strip()
+        return s == "" or s.lower() in ("nan", "none", "<none>")
+
+    # Filtrar filas sin traducir (opcional)
+    solo_vacias = st.checkbox("Traducir solo filas sin traducción previa", value=True)
+
+    # Botón de traducción
+    if st.button("Ejecutar traducción al Español", type="primary", key="btn_run_translate"):
+        # Contar filas a procesar
+        if solo_vacias:
+            tit_empty = df["Titulo ES"].apply(is_empty_value)
+            abs_empty = df["Abstract ES"].apply(is_empty_value)
+            rows_to_translate = df[tit_empty | abs_empty]
+        else:
+            rows_to_translate = df
+
+        total_rows = len(rows_to_translate)
+        if total_rows == 0:
+            st.success("¡Todos los registros ya cuentan con su respectiva traducción!")
+            return
+
+        # Inicialización del traductor
+        with st.status("Cargando motor de traducción offline...", expanded=True) as status:
+            try:
+                status.write("Inicializando Argos Translate (puede tardar en descargar el modelo si es la primera vez)...")
+                translator = get_argos_translator("en", "es", device=device_type)
+                if not translator:
+                    status.update(label="Error al inicializar el traductor", state="error")
+                    st.error("No se pudo cargar o descargar el paquete de idioma Inglés -> Español.")
+                    return
+                status.update(label="Motor de traducción cargado correctamente.", state="complete")
+            except Exception as e:
+                status.update(label="Error de inicialización", state="error")
+                st.error(f"Ocurrió un error al cargar el traductor: {e}")
+                return
+
+        # Barra de progreso
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        translated_count = 0
+        
+        # Procesar fila por fila
+        for idx, row in rows_to_translate.iterrows():
+            status_text.text(f"Traduciendo fila {translated_count + 1} de {total_rows}...")
+            
+            # Traducir Titulo si aplica
+            titulo_original = row.get("Titulo", "")
+            current_translated_title = df.at[idx, "Titulo ES"]
+            
+            if not solo_vacias or is_empty_value(current_translated_title):
+                if not is_empty_value(titulo_original):
+                    try:
+                        df.at[idx, "Titulo ES"] = translator.translate(str(titulo_original).strip())
+                    except Exception as ex:
+                        df.at[idx, "Titulo ES"] = f"Error: {ex}"
+                else:
+                    df.at[idx, "Titulo ES"] = ""
+
+            # Traducir Abstract si aplica
+            abstract_original = row.get("Abstract", "")
+            current_translated_abstract = df.at[idx, "Abstract ES"]
+            
+            if not solo_vacias or is_empty_value(current_translated_abstract):
+                if not is_empty_value(abstract_original):
+                    try:
+                        df.at[idx, "Abstract ES"] = translator.translate(str(abstract_original).strip())
+                    except Exception as ex:
+                        df.at[idx, "Abstract ES"] = f"Error: {ex}"
+                else:
+                    df.at[idx, "Abstract ES"] = ""
+
+            translated_count += 1
+            progress_bar.progress(translated_count / total_rows)
+
+        status_text.text("Guardando cambios en scoping_master.xlsx...")
+        
+        # Guardar en session state y en archivo
+        st.session_state["master_df"] = df
+        safe_save_master_dataframe(df)
+        
+        progress_bar.empty()
+        status_text.empty()
+        st.success(f"¡Traducción completada con éxito! Se procesaron {total_rows} filas.")
+        st.rerun()
+
+    # Visualizar las columnas de traducción
+    st.markdown("### Vista previa de Traducciones")
+    cols_to_show = ["Fuente", "Titulo", "Titulo ES", "Abstract", "Abstract ES"]
+    existing_show_cols = [c for c in cols_to_show if c in df.columns]
+    st.dataframe(df[existing_show_cols].head(10), use_container_width=True)
 
 
 def main():
