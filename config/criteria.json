@@ -1,8 +1,34 @@
 [
-  "Addresses face-to-face or co-located human-human collaboration.",
-  "Evaluates collaboration quality or collaborative effectiveness.",
-  "Includes a computational artifact, collaborative system, or software tool.",
-  "Focuses on human-human collaboration rather than human-AI or human-robot interaction.",
-  "Uses metrics, indicators, or evaluation methods to assess collaboration.",
-  "Evaluates the proposal"
+  {
+    "text": "Evaluates collaboration quality or collaborative effectiveness.",
+    "type": "inclusion"
+  },
+  {
+    "text": "Includes a computational artifact, collaborative system, or software tool.",
+    "type": "inclusion"
+  },
+  {
+    "text": "Uses metrics, indicators, or evaluation methods to assess collaboration.",
+    "type": "inclusion"
+  },
+  {
+    "text": "Evaluates the proposal",
+    "type": "inclusion"
+  },
+  {
+    "text": "Focuses on human-human interaction.",
+    "type": "inclusion"
+  },
+  {
+    "text": "\"Focuses on human-AI, human-robot, or human-agent interaction.\"",
+    "type": "exclusion"
+  },
+  {
+    "text": "Addresses face-to-face or co-located human-human collaboration.",
+    "type": "inclusion"
+  },
+  {
+    "text": "Addresses virtual, distributed, hybrid, or VR-mediated interaction.",
+    "type": "exclusion"
+  }
 ]

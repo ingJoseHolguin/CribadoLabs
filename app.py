@@ -291,7 +291,11 @@ def criteria_dataframe():
     criteria = st.session_state.get("criteria", [])
     return pd.DataFrame(
         [
-            {"ID": f"C{index}", "Criterio": criterion}
+            {
+                "ID": f"C{index}", 
+                "Tipo": "Inclusión" if criterion.get("type", "inclusion") == "inclusion" else "Exclusión", 
+                "Criterio": criterion.get("text", "")
+            }
             for index, criterion in enumerate(criteria, start=1)
         ]
     )
@@ -320,54 +324,65 @@ def sync_criteria_columns():
     df = st.session_state.get("master_df", load_master_dataframe())
     criteria = st.session_state.get("criteria", [])
     
-    existing_data = {
-        "Respuesta": {},
-        "Semantic": {},
+    # Mapeos basados en el TEXTO del criterio para evitar desalineación al reordenar o borrar
+    existing_responses = {} # text -> series
+    existing_subscores = {
+        "Semantic": {},      # text -> series
         "Context": {},
         "Centrality": {},
         "Evidence": {},
         "Penalty": {},
         "Total": {}
     }
-
+    
+    # 1. Encontrar los textos de criterios existentes y su índice viejo (C1, C2...)
+    text_to_old_index = {}
     for column in df.columns:
-        match_new = re.match(r"^(C\d+) (Semantic|Context|Centrality|Evidence|Penalty|Total)$", column)
-        match_resp = re.match(r"^(C\d+) Respuesta(?:|: (.+))$", column)
-        match_old = re.match(r"^Criterio (C\d+) (Semantic|Context|Centrality|Evidence|Penalty|Final Score|Respuesta|Score): (.+)$", column)
-        
-        if match_new:
-            c_index, col_type = match_new.groups()
-            existing_data[col_type][c_index] = df[column].copy()
-        elif match_resp:
-            c_index, _ = match_resp.groups()
-            existing_data["Respuesta"][c_index] = df[column].copy()
-        elif match_old:
-            c_index, col_type, _ = match_old.groups()
-            if col_type == "Final Score" or col_type == "Score":
-                col_type = "Total"
-            existing_data[col_type][c_index] = df[column].copy()
+        # Soportar formatos: "C1 Respuesta: Texto" o "Criterio C1 Respuesta: Texto"
+        match_resp = re.match(r"^(?:Criterio\s+)?(C\d+)\s+Respuesta:\s*(.+)$", column)
+        if match_resp:
+            c_index, criterion_text = match_resp.groups()
+            criterion_text = criterion_text.strip()
+            existing_responses[criterion_text] = df[column].copy()
+            text_to_old_index[criterion_text] = c_index
+            
+    # 2. Mapear subscores usando el índice viejo encontrado para ese texto
+    for col_type in ["Semantic", "Context", "Centrality", "Evidence", "Penalty", "Total"]:
+        for column in df.columns:
+            # Coincidir con "C1 Semantic" o "Criterio C1 Semantic: ..."
+            match_sub = re.match(r"^(?:Criterio\s+)?(C\d+)\s+" + col_type + r"(?::.*)?$", column, re.IGNORECASE)
+            if match_sub:
+                c_index = match_sub.group(1)
+                # Buscar a qué texto corresponde este c_index
+                for txt, old_idx in text_to_old_index.items():
+                    if old_idx == c_index:
+                        existing_subscores[col_type][txt] = df[column].copy()
+                        break
 
+    # Conservar columnas base (que no sean de criterios antiguos)
     base_columns = [
         column
         for column in df.columns
-        if not re.match(r"^(C\d+ |Criterio C\d+ )", column) and column != TOTAL_SCORE_COLUMN
+        if not re.match(r"^(?:C\d+|Criterio\s+C\d+)\s+", column) and column != TOTAL_SCORE_COLUMN
     ]
     df = df[base_columns].copy()
 
+    # Escribir las nuevas columnas respetando el nuevo orden/lista de criterios actual
     for index, criterion in enumerate(criteria, start=1):
         c_index = f"C{index}"
+        criterion_text = criterion.get("text", "").strip()
         
-        # 1. Respuesta always first
-        response_col = f"{c_index} Respuesta: {criterion}"
-        df[response_col] = existing_data["Respuesta"].get(c_index, "")
+        # 1. Respuesta
+        response_col = f"{c_index} Respuesta: {criterion_text}"
+        df[response_col] = existing_responses.get(criterion_text, "")
         df[response_col] = df[response_col].astype("object")
         
-        # 2. Subscore columns and Total
+        # 2. Subscore columns y Total
         for col_type in ["Semantic", "Context", "Centrality", "Evidence", "Penalty", "Total"]:
             col_name = f"{c_index} {col_type}"
-            if c_index in existing_data[col_type]:
+            if criterion_text in existing_subscores[col_type]:
                 df[col_name] = pd.to_numeric(
-                    existing_data[col_type][c_index], errors="coerce"
+                    existing_subscores[col_type][criterion_text], errors="coerce"
                 ).fillna(0)
             else:
                 df[col_name] = 0
@@ -529,198 +544,174 @@ def extract_json_response(text):
         return json.loads(match.group(0))
 
 
-def build_criterion_prompt(title, abstract, criterion_id, criterion):
+def build_semantic_match_prompt(title, abstract, criterion):
     return f"""
 You are a strict scientific screening assistant.
 
-Your task is to evaluate whether a bibliographic record satisfies a selection criterion.
+Your task is to evaluate the Semantic Match of a bibliographic record against a selection criterion.
 
 IMPORTANT RULES:
-
-* Be conservative and strict.
-* Do NOT infer missing information.
-* Do NOT assume relevance from isolated keywords alone.
-* Evaluate semantic meaning, context, and centrality carefully.
-* Penalize ambiguity and scope deviations.
-* The criterion must be supported by explicit textual evidence.
-* Return STRICT JSON ONLY.
-* No markdown.
-* No explanations outside JSON.
-
-EVALUATION PROCESS:
-
-1. Extract evidence from title and abstract.
-2. Evaluate each scoring dimension independently.
-3. Compute the final score.
-4. Assign a decision.
+- Be highly conservative and strict.
+- Do NOT infer missing details. If a concept is not explicitly mentioned, score it low.
+- Return STRICT JSON ONLY. Do not wrap in markdown blocks, do not write code blocks, do not output explanations outside the JSON.
 
 ---
 
-## SCORING DIMENSIONS
+## BIBLIOGRAPHIC RECORD:
+Title: {title}
+Abstract: {abstract}
 
-1. semantic_match
-   Measures semantic similarity between the criterion and the article content.
-
-0 = unrelated or absent
-1 = weak conceptual overlap
-2 = related conceptually
-3 = strongly aligned semantically
-
-2. context_alignment
-   Measures whether the article context matches the intended criterion context.
-
-Examples:
-
-* population
-* domain
-* environment
-* interaction type
-* human-human vs human-AI
-
-0 = wrong context
-1 = partially aligned
-2 = mostly aligned
-3 = fully aligned
-
-3. centrality
-   Measures whether the criterion is central to the paper.
-
-0 = absent
-1 = incidental mention
-2 = secondary topic
-3 = primary focus
-
-4. evidence_strength
-   Measures how explicit and strong the textual evidence is.
-
-0 = speculative or unclear
-1 = implied
-2 = explicit
-3 = strongly emphasized
-
-5. exclusion_penalty
-   Penalizes important deviations from the intended scope.
-
-0 = no penalty
--1 = mild mismatch
--2 = important mismatch
--3 = strong exclusion signal
-
----
-
-## FINAL SCORE
-
-final_score =
-semantic_match +
-context_alignment +
-centrality +
-evidence_strength +
-exclusion_penalty
-
----
-
-## DECISION RULES
-
-0-3 = exclude
-4-7 = manual_review
-8-12 = include
-
----
-
-## RESPONSE GUIDELINES
-
-The "response" field MUST be a detailed, structured narrative summary (in English).
-Do NOT just output "include", "exclude", or a single word.
-Your summary MUST explicitly explain:
-1. What specific evidence was found in the text.
-2. Which scoring dimension was the most critical for the final decision.
-3. The logical justification for the final inclusion/exclusion decision.
-
----
-
-## REQUIRED JSON FORMAT
-
-{{
-"criterion_id": "{criterion_id}",
-
-"evidence": {{
-"matched_concepts": [],
-"context_detected": "",
-"exclusion_signals": []
-}},
-
-"semantic_match": {{
-"score": 0,
-"reason": ""
-}},
-
-"context_alignment": {{
-"score": 0,
-"reason": ""
-}},
-
-"centrality": {{
-"score": 0,
-"reason": ""
-}},
-
-"evidence_strength": {{
-"score": 0,
-"reason": ""
-}},
-
-"exclusion_penalty": {{
-"score": 0,
-"reason": ""
-}},
-
-"final_score": 0,
-
-"decision": "exclude",
-
-"confidence": 0.0,
-
-"response": ""
-}}
-
----
-
-## CRITERION
-
+## SELECTION CRITERION:
 {criterion}
 
 ---
 
-## TITLE
+## SCORING DIMENSION TO EVALUATE:
 
-{title}
+Semantic Match (Score: 0 to 3)
+Measures semantic similarity between the concepts in the criterion and the article content.
+- 0 = Unrelated or absent (no conceptual overlap)
+- 1 = Weak conceptual overlap (only minor keywords mentioned, no deeper connection)
+- 2 = Related conceptually (addresses similar themes but doesn't directly map)
+- 3 = Strongly aligned semantically (concepts directly overlap and map to the criterion)
 
 ---
 
-## ABSTRACT
+## REQUIRED JSON RESPONSE FORMAT:
+{{
+  "score": <0|1|2|3>,
+  "reason": "<strict_justification_in_english>"
+}}
+""".strip()
 
-{abstract}
+
+def build_centrality_prompt(title, abstract, criterion):
+    return f"""
+You are a strict scientific screening assistant.
+
+Your task is to evaluate the Centrality of a bibliographic record against a selection criterion.
+
+IMPORTANT RULES:
+- Be highly conservative and strict.
+- Do NOT assume a topic is central just because it is mentioned.
+- Return STRICT JSON ONLY. Do not wrap in markdown blocks, do not write code blocks, do not output explanations outside the JSON.
+
+---
+
+## BIBLIOGRAPHIC RECORD:
+Title: {title}
+Abstract: {abstract}
+
+## SELECTION CRITERION:
+{criterion}
+
+---
+
+## SCORING DIMENSION TO EVALUATE:
+
+Centrality (Score: 0 to 3)
+Measures whether the criterion is central to the paper's main focus or goals.
+- 0 = Absent
+- 1 = Incidental mention (only in passing or as background context)
+- 2 = Secondary topic (discussed in a section, but not the main objective)
+- 3 = Primary focus (the main objective or key result of the paper)
+
+---
+
+## REQUIRED JSON RESPONSE FORMAT:
+{{
+  "score": <0|1|2|3>,
+  "reason": "<strict_justification_in_english>"
+}}
+""".strip()
+
+
+def build_exclusion_penalty_prompt(title, abstract, criterion):
+    return f"""
+You are a strict scientific screening assistant acting as a strict exclusion gatekeeper.
+
+Your only task is to identify deviations, gaps, or explicit exclusion signals between the bibliographic record and the selection criterion.
+
+IMPORTANT RULES:
+- Be extremely critical. Look for any mismatch in scope, population, methods, or assumptions.
+- If there is any mismatch, apply a negative penalty.
+- Return STRICT JSON ONLY. Do not wrap in markdown blocks, do not write code blocks, do not output explanations outside the JSON.
+
+---
+
+## BIBLIOGRAPHIC RECORD:
+Title: {title}
+Abstract: {abstract}
+
+## SELECTION CRITERION:
+{criterion}
+
+---
+
+## SCORING DIMENSION TO EVALUATE:
+
+Exclusion Penalty (Score: 0 to -3)
+Penalizes important deviations from the intended scope or clear exclusion signals.
+- 0 = No penalty (perfect alignment, no mismatched scope)
+- -1 = Mild mismatch in scope or parameters
+- -2 = Significant mismatch or clear deviation from the intended scope
+- -3 = Strong exclusion signal (explicitly states focus is outside, or contains a hard exclusion parameter)
+
+---
+
+## REQUIRED JSON RESPONSE FORMAT:
+{{
+  "score": <0|-1|-2|-3>,
+  "reason": "<strict_justification_in_english>"
+}}
 """.strip()
 
 
 def evaluate_row_criterion(provider, endpoint, model, api_key, title, abstract, criterion_id, criterion):
-    prompt = build_criterion_prompt(title, abstract, criterion_id, criterion)
-    raw_response = llm_chat(provider, endpoint, model, api_key, prompt)
-    parsed = extract_json_response(raw_response)
+    # Consulta 1: Semantic Match
+    p_sem = build_semantic_match_prompt(title, abstract, criterion)
+    r_sem = llm_chat(provider, endpoint, model, api_key, p_sem)
+    try:
+        parsed_sem = extract_json_response(r_sem)
+        semantic = int(parsed_sem.get("score", 0))
+        semantic_reason = str(parsed_sem.get("reason", "")).strip()
+    except Exception as e:
+        semantic = 0
+        semantic_reason = f"Error: {e}. Respuesta cruda: {r_sem}"
 
-    def get_score(field):
-        val = parsed.get(field, {})
-        if isinstance(val, dict):
-            return int(val.get("score", 0))
-        return int(val) if val else 0
+    # Consulta 2: Centrality
+    p_cen = build_centrality_prompt(title, abstract, criterion)
+    r_cen = llm_chat(provider, endpoint, model, api_key, p_cen)
+    try:
+        parsed_cen = extract_json_response(r_cen)
+        centrality = int(parsed_cen.get("score", 0))
+        centrality_reason = str(parsed_cen.get("reason", "")).strip()
+    except Exception as e:
+        centrality = 0
+        centrality_reason = f"Error: {e}. Respuesta cruda: {r_cen}"
 
-    semantic = get_score("semantic_match")
-    context = get_score("context_alignment")
-    centrality = get_score("centrality")
-    evidence = get_score("evidence_strength")
-    penalty = get_score("exclusion_penalty")
+    # Consulta 3: Exclusion Penalty
+    p_pen = build_exclusion_penalty_prompt(title, abstract, criterion)
+    r_pen = llm_chat(provider, endpoint, model, api_key, p_pen)
+    try:
+        parsed_pen = extract_json_response(r_pen)
+        penalty = int(parsed_pen.get("score", 0))
+        penalty_reason = str(parsed_pen.get("reason", "")).strip()
+    except Exception as e:
+        penalty = 0
+        penalty_reason = f"Error: {e}. Respuesta cruda: {r_pen}"
+
+    # Mantener a 0 Context y Evidence por retrocompatibilidad
+    context = 0
+    evidence = 0
     
     final_score = semantic + context + centrality + evidence + penalty
+
+    combined_response = (
+        f"1. COINCIDENCIA SEMÁNTICA ({semantic}/3): {semantic_reason}\n\n"
+        f"2. CENTRALIDAD ({centrality}/3): {centrality_reason}\n\n"
+        f"3. PENALIZACIÓN POR EXCLUSIÓN ({penalty}/-3): {penalty_reason}"
+    )
 
     return {
         "semantic_match": semantic,
@@ -729,8 +720,8 @@ def evaluate_row_criterion(provider, endpoint, model, api_key, title, abstract, 
         "evidence_strength": evidence,
         "exclusion_penalty": penalty,
         "final_score": final_score,
-        "respuesta": str(parsed.get("response", "")).strip(),
-        "raw": raw_response,
+        "respuesta": combined_response,
+        "raw": f"Evaluado en 3 consultas separadas.\n\n{combined_response}",
     }
 
 
@@ -767,7 +758,16 @@ def load_criteria():
         with open(CRITERIA_FILE, "r", encoding="utf-8") as config_file:
             criteria = json.load(config_file)
             if isinstance(criteria, list):
-                return criteria
+                migrated = []
+                for item in criteria:
+                    if isinstance(item, str):
+                        migrated.append({"text": item, "type": "inclusion"})
+                    elif isinstance(item, dict):
+                        migrated.append({
+                            "text": item.get("text", ""),
+                            "type": item.get("type", "inclusion")
+                        })
+                return migrated
             return []
     except (OSError, json.JSONDecodeError):
         return []
@@ -901,7 +901,7 @@ def llm_settings_tab():
     update_total_score(df)
 
     criterion_options = {
-        f"C{index}: {criterion}": (index, criterion)
+        f"C{index} ({'Inclusión' if criterion.get('type') == 'inclusion' else 'Exclusión'}): {criterion.get('text', '')}": (index, criterion.get('text', ''))
         for index, criterion in enumerate(criteria, start=1)
     }
     selected_criteria = st.multiselect(
@@ -931,7 +931,7 @@ def llm_settings_tab():
             st.warning("Esto borrará las puntuaciones y respuestas actuales para reiniciar la evaluación.")
             if st.button("Confirmar borrado", type="primary", use_container_width=True):
                 for index, criterion in enumerate(criteria, start=1):
-                    col_response = f"C{index} Respuesta: {criterion}"
+                    col_response = f"C{index} Respuesta: {criterion.get('text', '')}"
                     if col_response in df.columns:
                         df[col_response] = ""
                     for sub in ["Semantic", "Context", "Centrality", "Evidence", "Penalty", "Total"]:
@@ -984,7 +984,7 @@ def llm_settings_tab():
                         progress.progress(completed / total_tasks, text=progress_text)
                         
                         log_entry = f"⏭️ Fila {row_position + 1} | C{criterion_index} -> Ya evaluado (omitido)\n\n"
-                        log_text += log_entry
+                        log_text = log_entry + log_text
                         log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
                         continue
 
@@ -1010,14 +1010,14 @@ def llm_settings_tab():
                     df.at[row_position, col_final] = result["final_score"]
                     
                     log_entry = f"✅ Fila {row_position + 1} | C{criterion_index} -> Total: {result['final_score']} | {result['respuesta']}\n\n"
-                    log_text += log_entry
+                    log_text = log_entry + log_text
                     log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
                 except Exception as exc:
                     df.at[row_position, col_response] = f"Error: {exc}"
                     df.at[row_position, col_final] = 0
                     
                     log_entry = f"❌ Fila {row_position + 1} | {criterion_id} -> Error: {exc}\n\n"
-                    log_text += log_entry
+                    log_text = log_entry + log_text
                     log_container.text_area("Registro", value=log_text, height=300, disabled=True, label_visibility="collapsed")
 
                 completed += 1
@@ -1044,8 +1044,9 @@ def criteria_tab():
 
     def handle_add_criterion():
         val = st.session_state.get("new_criterion_input", "").strip()
+        c_type = st.session_state.get("new_criterion_type", "inclusion")
         if val:
-            st.session_state["criteria"].append(val)
+            st.session_state["criteria"].append({"text": val, "type": c_type})
             save_criteria(st.session_state["criteria"])
             sync_criteria_columns()
         st.session_state["new_criterion_input"] = ""
@@ -1053,11 +1054,21 @@ def criteria_tab():
     if "new_criterion_input" not in st.session_state:
         st.session_state["new_criterion_input"] = ""
 
-    st.text_input(
-        "Nuevo criterio", 
-        placeholder="Ej. Incluye población adulta", 
-        key="new_criterion_input"
-    )
+    col_text, col_type = st.columns([3, 1])
+    with col_text:
+        st.text_input(
+            "Nuevo criterio", 
+            placeholder="Ej. Incluye población adulta", 
+            key="new_criterion_input"
+        )
+    with col_type:
+        st.selectbox(
+            "Tipo",
+            options=["inclusion", "exclusion"],
+            format_func=lambda x: "Inclusión" if x == "inclusion" else "Exclusión",
+            key="new_criterion_type"
+        )
+        
     col_add, col_apply = st.columns([1, 1])
 
     with col_add:
@@ -1087,7 +1098,7 @@ def criteria_tab():
             removed = st.session_state["criteria"].pop(delete_index)
             save_criteria(st.session_state["criteria"])
             sync_criteria_columns()
-            st.success(f"Se eliminó {delete_id}: {removed}. Los criterios fueron renumerados.")
+            st.success(f"Se eliminó {delete_id}: {removed.get('text', '')}. Los criterios fueron renumerados.")
             st.rerun()
 
 
@@ -1129,6 +1140,10 @@ def translation_tab():
 
     # Botón de traducción
     if st.button("Ejecutar traducción al Español", type="primary", key="btn_run_translate"):
+        # Asegurar tipo object/string para evitar TypeError con columnas vacías (que pandas lee como float64)
+        df["Titulo ES"] = df["Titulo ES"].astype(object)
+        df["Abstract ES"] = df["Abstract ES"].astype(object)
+        
         # Contar filas a procesar
         if solo_vacias:
             tit_empty = df["Titulo ES"].apply(is_empty_value)
@@ -1214,6 +1229,200 @@ def translation_tab():
     st.dataframe(df[existing_show_cols].head(10), use_container_width=True)
 
 
+def safe_save_dataframe(df_to_save, filename):
+    try:
+        return save_master_dataframe(df_to_save, filename=filename)
+    except PermissionError:
+        st.toast(f"⚠️ No se pudo guardar en Excel. Por favor, cierra el archivo {filename} si lo tienes abierto.", icon="⚠️")
+        return OUTPUT_FOLDER / filename
+
+
+def filtering_tab():
+    st.subheader("Filtrado de Flujo (PRISMA)")
+    st.write(
+        "Crea subtablas a partir de la tabla maestra aplicando criterios de inclusión y exclusión."
+    )
+    
+    df = st.session_state.get("master_df", load_master_dataframe())
+    criteria = st.session_state.get("criteria", [])
+    
+    if df.empty:
+        st.warning("Carga o procesa la tabla maestra antes de realizar el filtrado.")
+        return
+        
+    inclusion_criteria = [c for c in criteria if c.get("type", "inclusion") == "inclusion"]
+    exclusion_criteria = [c for c in criteria if c.get("type", "inclusion") == "exclusion"]
+    
+    if not criteria:
+        st.warning("Debes definir criterios en la pestaña 'Criterios' antes de filtrar.")
+        return
+        
+    st.markdown("### 1. Configuración de Inclusión")
+    if not inclusion_criteria:
+        st.info("No hay criterios de inclusión definidos.")
+        inc_threshold = 4
+        inc_rule = "Todos"
+        apply_inc = []
+    else:
+        apply_inc = st.multiselect(
+            "Criterios de Inclusión a aplicar",
+            options=[c.get("text", "") for c in inclusion_criteria],
+            default=[c.get("text", "") for c in inclusion_criteria],
+            key="filtering_apply_inc"
+        )
+        col_inc_thresh, col_inc_rule = st.columns([1, 1])
+        with col_inc_thresh:
+            inc_threshold = st.slider(
+                "Umbral de puntuación mínima para inclusión",
+                min_value=-3,
+                max_value=12,
+                value=4,
+                help="El artículo debe tener un puntaje total mayor o igual a este valor para ser incluido. (Por defecto 4).",
+                key="filtering_inc_threshold"
+            )
+        with col_inc_rule:
+            inc_rule = st.radio(
+                "Regla de Inclusión",
+                options=["Todos", "Al menos uno"],
+                help="Todos: debe cumplir con cada criterio de inclusión seleccionado. Al menos uno: debe cumplir con al menos uno.",
+                key="filtering_inc_rule"
+            )
+
+    st.markdown("### 2. Configuración de Exclusión")
+    if not exclusion_criteria:
+        st.info("No hay criterios de exclusión definidos.")
+        exc_threshold = 4
+        apply_exc = []
+    else:
+        apply_exc = st.multiselect(
+            "Criterios de Exclusión a aplicar",
+            options=[c.get("text", "") for c in exclusion_criteria],
+            default=[c.get("text", "") for c in exclusion_criteria],
+            key="filtering_apply_exc"
+        )
+        exc_threshold = st.slider(
+            "Umbral de puntuación mínima para exclusión",
+            min_value=-3,
+            max_value=12,
+            value=4,
+            help="Si un artículo obtiene un puntaje para un criterio de exclusión mayor o igual a este valor, se considerará que CUMPLE con la exclusión y será DESCARTADO. (Por defecto 4).",
+            key="filtering_exc_threshold"
+        )
+
+    st.markdown("---")
+    
+    if st.button("Ejecutar Cribado y Generar Tablas", type="primary", use_container_width=True):
+        total_initial = len(df)
+        df_included = df.copy()
+        
+        # 1. Aplicar filtro de Inclusión
+        if apply_inc:
+            inc_conditions = []
+            for item in apply_inc:
+                idx = next((i for i, c in enumerate(criteria, start=1) if c.get("text") == item), None)
+                if idx is not None:
+                    col_total = f"C{idx} Total"
+                    if col_total in df_included.columns:
+                        cond = pd.to_numeric(df_included[col_total], errors="coerce").fillna(0) >= inc_threshold
+                        inc_conditions.append(cond)
+            
+            if inc_conditions:
+                if inc_rule == "Todos":
+                    passed_inc = inc_conditions[0]
+                    for cond in inc_conditions[1:]:
+                        passed_inc = passed_inc & cond
+                else:
+                    passed_inc = inc_conditions[0]
+                    for cond in inc_conditions[1:]:
+                        passed_inc = passed_inc | cond
+                df_included = df_included[passed_inc].copy()
+                
+        total_included = len(df_included)
+        
+        # 2. Aplicar filtro de Exclusión (sobre los que pasaron la inclusión)
+        df_final = df_included.copy()
+        
+        if apply_exc:
+            exc_conditions = []
+            for item in apply_exc:
+                idx = next((i for i, c in enumerate(criteria, start=1) if c.get("text") == item), None)
+                if idx is not None:
+                    col_total = f"C{idx} Total"
+                    if col_total in df_final.columns:
+                        # Si saca >= exc_threshold en la exclusión, lo descartamos. Queremos mantener < exc_threshold.
+                        cond = pd.to_numeric(df_final[col_total], errors="coerce").fillna(0) < exc_threshold
+                        exc_conditions.append(cond)
+            
+            if exc_conditions:
+                # Para sobrevivir, debe cumplir < exc_threshold en TODOS los criterios de exclusión
+                survived = exc_conditions[0]
+                for cond in exc_conditions[1:]:
+                    survived = survived & cond
+                df_final = df_final[survived].copy()
+                
+        total_final = len(df_final)
+        excluded_by_exc = total_included - total_final
+        
+        # Guardar en Excel
+        safe_save_dataframe(df_included, "scoping_included.xlsx")
+        safe_save_dataframe(df_final, "scoping_final.xlsx")
+        
+        st.session_state["filtering_results"] = {
+            "initial": total_initial,
+            "included": total_included,
+            "excluded_inc": total_initial - total_included,
+            "excluded_exc": excluded_by_exc,
+            "final": total_final
+        }
+        st.success("¡Filtrado completado con éxito!")
+        
+    results = st.session_state.get("filtering_results", None)
+    if results:
+        st.markdown("### Resumen del Flujo PRISMA")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("1. Iniciales (Maestra)", results["initial"])
+        col2.metric("2. Pasan Inclusión", results["included"], f"-{results['excluded_inc']} excl.")
+        col3.metric("3. Descartados por Exclusión", results["excluded_exc"], delta_color="inverse")
+        col4.metric("4. Finales", results["final"])
+        
+        st.markdown("### Descargar Resultados")
+        col_m, col_i, col_f = st.columns(3)
+        
+        with col_m:
+            master_path = OUTPUT_FOLDER / MASTER_FILENAME
+            if master_path.exists():
+                with open(master_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Descargar Tabla Maestra",
+                        data=f.read(),
+                        file_name="scoping_master.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+        with col_i:
+            inc_path = OUTPUT_FOLDER / "scoping_included.xlsx"
+            if inc_path.exists():
+                with open(inc_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Descargar Incluidos (Etapa 1)",
+                        data=f.read(),
+                        file_name="scoping_included.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+        with col_f:
+            final_path = OUTPUT_FOLDER / "scoping_final.xlsx"
+            if final_path.exists():
+                with open(final_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Descargar Finales (Etapa 2)",
+                        data=f.read(),
+                        file_name="scoping_final.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+
+
 def main():
     ensure_workspace()
 
@@ -1230,14 +1439,16 @@ def main():
         st.write("3. Añadir criterios")
         st.write("4. Configurar LLM")
         st.write("5. Traducir contenido")
+        st.write("6. Filtrar resultados (PRISMA)")
 
-    tab_sources, tab_processing, tab_criteria, tab_llm, tab_translation = st.tabs(
+    tab_sources, tab_processing, tab_criteria, tab_llm, tab_translation, tab_filtering = st.tabs(
         [
             "Fuentes",
             "Tabla maestra",
             "Criterios",
             "LLM",
             "Traducción",
+            "Filtrado (PRISMA)"
         ]
     )
 
@@ -1251,6 +1462,8 @@ def main():
         llm_settings_tab()
     with tab_translation:
         translation_tab()
+    with tab_filtering:
+        filtering_tab()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import re
 
 import bibtexparser
 import pandas as pd
@@ -216,9 +217,16 @@ def save_master_dataframe(df, output_folder=OUTPUT_FOLDER, filename=MASTER_FILEN
     output_folder.mkdir(parents=True, exist_ok=True)
     output_file = output_folder / filename
     
+    # Limpiar cualquier caracter de control ASCII que no sea válido en XML 1.0
+    df_clean = df.copy()
+    invalid_xml_re = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+    for col in df_clean.columns:
+        if df_clean[col].dtype == object:
+            df_clean[col] = df_clean[col].apply(lambda x: invalid_xml_re.sub('', str(x)) if isinstance(x, str) else x)
+            
     # Escribir primero en un archivo temporal para evitar corromper el original si falla
     temp_file = output_file.with_suffix(".tmp.xlsx")
-    df.to_excel(temp_file, index=False)
+    df_clean.to_excel(temp_file, index=False)
     
     # Reemplazo atómico
     if temp_file.exists():
@@ -249,10 +257,11 @@ def load_master_dataframe(path=OUTPUT_FOLDER / MASTER_FILENAME):
             f"Puedes recuperarlo desde tu Git o volver a procesar tu carpeta de origen. Error original: {e}"
         )
     
-    # Asegurar que todas las columnas de la especificación existan en el DataFrame cargado
+    # Asegurar que todas las columnas de la especificación existan en el DataFrame cargado y tengan tipo object
     for col in NORMALIZED_COLUMNS:
         if col not in df.columns:
             df[col] = ""
+        df[col] = df[col].astype(object)
             
     # Asegurar que el nuevo orden de columnas se aplique a archivos existentes
     existing_cols = list(df.columns)
