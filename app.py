@@ -1102,23 +1102,98 @@ def criteria_tab():
             st.rerun()
 
 
+def translate_pdf_with_fitz_and_md(input_path, output_pdf_path, output_md_path, translator, progress_callback=None):
+    import fitz
+    import re
+    
+    doc = fitz.open(input_path)
+    total_pages = len(doc)
+    
+    # Expresión regular para saltar bloques que son solo números o caracteres especiales
+    only_symbols_re = re.compile(r'^[0-9\s\-\+\*\/\(\)\[\]\,\.\:\;\_\#\%\&\=\>\<\@\“\”\u2022\–\—]+$')
+    
+    md_content = []
+    
+    for page_idx, page in enumerate(doc):
+        if progress_callback:
+            progress_callback(page_idx, total_pages)
+            
+        md_content.append(f"\n## --- Página {page_idx + 1} ---\n")
+        
+        blocks = page.get_text("blocks")
+        for b in blocks:
+            x0, y0, x1, y1, text, block_no, block_type = b
+            if block_type != 0: # Saltamos imágenes o elementos no textuales
+                continue
+                
+            text_clean = text.strip()
+            if not text_clean or len(text_clean) < 2:
+                continue
+                
+            # Si son solo números/símbolos, los añadimos directamente sin traducir para que se mantengan
+            if only_symbols_re.match(text_clean):
+                md_content.append(text_clean + "\n")
+                continue
+                
+            # Limpiar saltos de línea para mejorar la traducción
+            text_to_translate = text_clean.replace("-\n", "").replace("- \n", "").replace("\n", " ")
+            text_to_translate = re.sub(r'\s+', ' ', text_to_translate).strip()
+            
+            try:
+                translated_text = translator.translate(text_to_translate)
+            except Exception:
+                translated_text = text_clean
+                
+            md_content.append(translated_text + "\n")
+            
+            # Coordenadas
+            rect = fitz.Rect(x0, y0, x1, y1)
+            # Dibujar rectángulo blanco
+            bg_rect = fitz.Rect(x0 - 1, y0 - 1, x1 + 1, y1 + 1)
+            page.draw_rect(bg_rect, color=(1, 1, 1), fill=(1, 1, 1), width=0)
+            
+            # Insertar texto traducido con ajuste de fuente
+            font_size = 9.0
+            while font_size >= 4.5:
+                res = page.insert_textbox(
+                    rect, 
+                    translated_text, 
+                    fontsize=font_size, 
+                    fontname="helv", 
+                    align=0
+                )
+                if res >= 0:
+                    break
+                font_size -= 0.5
+            else:
+                page.insert_textbox(
+                    rect, 
+                    translated_text, 
+                    fontsize=4.5, 
+                    fontname="helv", 
+                    align=0
+                )
+                
+    doc.save(output_pdf_path)
+    doc.close()
+    
+    # Guardar el archivo Markdown
+    with open(output_md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(md_content))
+
+
 def translation_tab():
-    st.subheader("Traducción Offline de Tabla (Argos Translate)")
+    st.subheader("Traducción Offline (Argos Translate)")
     st.write(
-        "Traduce los campos **Titulo** y **Abstract** al Español de manera 100% offline. "
-        "Los resultados se guardarán en las columnas **Titulo ES** y **Abstract ES** respectivamente."
+        "Traduce y procesa metadatos de la tabla maestra o archivos PDF de forma 100% offline."
     )
 
     df = st.session_state.get("master_df", load_master_dataframe())
     
-    if df.empty:
-        st.warning("No hay registros en la tabla maestra para traducir.")
-        return
-
-    # Opciones de aceleración
-    st.markdown("### Configuración de Aceleración")
+    # Opciones de aceleración (compartida por ambas sub-pestañas)
+    st.markdown("### Configuración del Motor de Traducción")
     device_type = st.radio(
-        "Seleccionar dispositivo de procesamiento (Aceleración GPU):",
+        "Dispositivo de procesamiento (Aceleración GPU):",
         options=["auto", "cpu", "cuda"],
         index=0,
         help=(
@@ -1129,104 +1204,245 @@ def translation_tab():
         horizontal=True
     )
 
-    def is_empty_value(val):
-        if pd.isna(val):
-            return True
-        s = str(val).strip()
-        return s == "" or s.lower() in ("nan", "none", "<none>")
+    tab_metadata, tab_pdf = st.tabs(["Traducción de Tabla (Excel)", "Traducción de Archivos PDF"])
 
-    # Filtrar filas sin traducir (opcional)
-    solo_vacias = st.checkbox("Traducir solo filas sin traducción previa", value=True)
-
-    # Botón de traducción
-    if st.button("Ejecutar traducción al Español", type="primary", key="btn_run_translate"):
-        # Asegurar tipo object/string para evitar TypeError con columnas vacías (que pandas lee como float64)
-        df["Titulo ES"] = df["Titulo ES"].astype(object)
-        df["Abstract ES"] = df["Abstract ES"].astype(object)
+    with tab_metadata:
+        st.markdown("### Traducción de Títulos y Abstracts (Excel)")
+        st.write(
+            "Traduce los campos **Titulo** y **Abstract** de la tabla maestra al Español. "
+            "Los resultados se guardarán en las columnas **Titulo ES** y **Abstract ES** respectivamente."
+        )
         
-        # Contar filas a procesar
-        if solo_vacias:
-            tit_empty = df["Titulo ES"].apply(is_empty_value)
-            abs_empty = df["Abstract ES"].apply(is_empty_value)
-            rows_to_translate = df[tit_empty | abs_empty]
+        if df.empty:
+            st.warning("No hay registros en la tabla maestra para traducir.")
         else:
-            rows_to_translate = df
+            # Filtrar filas sin traducir (opcional)
+            solo_vacias = st.checkbox("Traducir solo filas sin traducción previa", value=True)
 
-        total_rows = len(rows_to_translate)
-        if total_rows == 0:
-            st.success("¡Todos los registros ya cuentan con su respectiva traducción!")
-            return
+            def is_empty_value(val):
+                if pd.isna(val):
+                    return True
+                s = str(val).strip()
+                return s == "" or s.lower() in ("nan", "none", "<none>")
 
-        # Inicialización del traductor
-        with st.status("Cargando motor de traducción offline...", expanded=True) as status:
+            # Botón de traducción
+            if st.button("Ejecutar traducción al Español", type="primary", key="btn_run_translate"):
+                # Asegurar tipo object/string para evitar TypeError con columnas vacías (que pandas lee como float64)
+                df["Titulo ES"] = df["Titulo ES"].astype(object)
+                df["Abstract ES"] = df["Abstract ES"].astype(object)
+                
+                # Contar filas a procesar
+                if solo_vacias:
+                    tit_empty = df["Titulo ES"].apply(is_empty_value)
+                    abs_empty = df["Abstract ES"].apply(is_empty_value)
+                    rows_to_translate = df[tit_empty | abs_empty]
+                else:
+                    rows_to_translate = df
+
+                total_rows = len(rows_to_translate)
+                if total_rows == 0:
+                    st.success("¡Todos los registros ya cuentan con su respectiva traducción!")
+                else:
+                    # Inicialización del traductor
+                    with st.status("Cargando motor de traducción offline...", expanded=True) as status:
+                        try:
+                            status.write("Inicializando Argos Translate (puede tardar en descargar el modelo si es la primera vez)...")
+                            translator = get_argos_translator("en", "es", device=device_type)
+                            if not translator:
+                                status.update(label="Error al inicializar el traductor", state="error")
+                                st.error("No se pudo cargar o descargar el paquete de idioma Inglés -> Español.")
+                                return
+                            status.update(label="Motor de traducción cargado correctamente.", state="complete")
+                        except Exception as e:
+                            status.update(label="Error de inicialización", state="error")
+                            st.error(f"Ocurrió un error al cargar el traductor: {e}")
+                            return
+
+                    # Barra de progreso
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+
+                    translated_count = 0
+                    
+                    # Procesar fila por fila
+                    for idx, row in rows_to_translate.iterrows():
+                        status_text.text(f"Traduciendo fila {translated_count + 1} de {total_rows}...")
+                        
+                        # Traducir Titulo si aplica
+                        titulo_original = row.get("Titulo", "")
+                        current_translated_title = df.at[idx, "Titulo ES"]
+                        
+                        if not solo_vacias or is_empty_value(current_translated_title):
+                            if not is_empty_value(titulo_original):
+                                try:
+                                    df.at[idx, "Titulo ES"] = translator.translate(str(titulo_original).strip())
+                                except Exception as ex:
+                                    df.at[idx, "Titulo ES"] = f"Error: {ex}"
+                            else:
+                                df.at[idx, "Titulo ES"] = ""
+
+                        # Traducir Abstract si aplica
+                        abstract_original = row.get("Abstract", "")
+                        current_translated_abstract = df.at[idx, "Abstract ES"]
+                        
+                        if not solo_vacias or is_empty_value(current_translated_abstract):
+                            if not is_empty_value(abstract_original):
+                                try:
+                                    df.at[idx, "Abstract ES"] = translator.translate(str(abstract_original).strip())
+                                except Exception as ex:
+                                    df.at[idx, "Abstract ES"] = f"Error: {ex}"
+                            else:
+                                df.at[idx, "Abstract ES"] = ""
+
+                        translated_count += 1
+                        progress_bar.progress(translated_count / total_rows)
+
+                    status_text.text("Guardando cambios en scoping_master.xlsx...")
+                    
+                    # Guardar en session state y en archivo
+                    st.session_state["master_df"] = df
+                    safe_save_master_dataframe(df)
+                    
+                    progress_bar.empty()
+                    status_text.empty()
+                    st.success(f"¡Traducción completada con éxito! Se procesaron {total_rows} filas.")
+                    st.rerun()
+
+            # Visualizar las columnas de traducción
+            st.markdown("### Vista previa de Traducciones")
+            cols_to_show = ["Fuente", "Titulo", "Titulo ES", "Abstract", "Abstract ES"]
+            existing_show_cols = [c for c in cols_to_show if c in df.columns]
+            st.dataframe(df[existing_show_cols].head(10), use_container_width=True)
+
+    with tab_pdf:
+        st.markdown("### Traducción por Lote de PDFs (Preservando Imágenes/Gráficos)")
+        st.write(
+            "Carga archivos PDF en inglés. El sistema extraerá el texto, lo traducirá al español "
+            "y generará nuevos archivos PDF sobreescribiendo el texto en la misma posición (coordenadas). "
+            "Esto mantiene los gráficos, imágenes y la distribución original del documento intacta."
+        )
+        
+        uploaded_files = st.file_uploader(
+            "Subir archivos PDF (en inglés)",
+            type=["pdf"],
+            accept_multiple_files=True,
+            key="pdf_uploader"
+        )
+        
+        if uploaded_files:
+            st.write(f"**Archivos cargados ({len(uploaded_files)}):**")
+            # Mostrar nombres y tamaños en una tabla
+            files_data = []
+            for f in uploaded_files:
+                files_data.append({
+                    "Nombre": f.name,
+                    "Tamaño (KB)": round(len(f.getvalue()) / 1024, 2)
+                })
+            st.dataframe(pd.DataFrame(files_data), use_container_width=True)
+            
+            if st.button("Iniciar traducción de PDFs", type="primary", key="btn_run_translate_pdf"):
+                # Crear carpetas si no existen
+                ingles_dir = Path("output/pdf_traducciones/ingles")
+                espanol_dir = Path("output/pdf_traducciones/espanol")
+                ingles_dir.mkdir(parents=True, exist_ok=True)
+                espanol_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Inicialización del traductor
+                with st.status("Cargando motor de traducción offline...", expanded=True) as status:
+                    try:
+                        status.write("Inicializando Argos Translate (puede tardar en descargar el modelo si es la primera vez)...")
+                        translator = get_argos_translator("en", "es", device=device_type)
+                        if not translator:
+                            status.update(label="Error al inicializar el traductor", state="error")
+                            st.error("No se pudo cargar o descargar el paquete de idioma Inglés -> Español.")
+                            return
+                        status.update(label="Motor de traducción cargado correctamente.", state="complete")
+                    except Exception as e:
+                        status.update(label="Error de inicialización", state="error")
+                        st.error(f"Ocurrió un error al cargar el traductor: {e}")
+                        return
+
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                total_files = len(uploaded_files)
+                for f_idx, f in enumerate(uploaded_files):
+                    filename = f.name
+                    # Guardar archivo original en inglés
+                    ingles_path = ingles_dir / filename
+                    with open(ingles_path, "wb") as out_f:
+                        out_f.write(f.getvalue())
+                        
+                    # Definir rutas de salida en español
+                    espanol_pdf_path = espanol_dir / filename
+                    espanol_md_path = espanol_dir / Path(filename).with_suffix(".md").name
+                    
+                    status_text.write(f"⏳ Procesando archivo {f_idx + 1}/{total_files}: **{filename}**...")
+                    
+                    # Llamar al traductor de fitz
+                    try:
+                        def page_callback(page_num, total_pages):
+                            status_text.write(
+                                f"⏳ Traduciendo **{filename}** | Página {page_num + 1}/{total_pages}..."
+                            )
+                        
+                        translate_pdf_with_fitz_and_md(
+                            ingles_path, 
+                            espanol_pdf_path, 
+                            espanol_md_path, 
+                            translator, 
+                            page_callback
+                        )
+                    except Exception as ex:
+                        st.error(f"❌ Error al traducir {filename}: {ex}")
+                        
+                    progress_bar.progress((f_idx + 1) / total_files)
+                    
+                progress_bar.empty()
+                status_text.empty()
+                st.success("¡Proceso de traducción de PDFs finalizado!")
+                st.rerun() # Recargar la página para mostrar los botones de descarga
+                
+        # Si la carpeta español contiene archivos traducidos, mostrar botón de descarga en ZIP
+        espanol_dir = Path("output/pdf_traducciones/espanol")
+        if espanol_dir.exists() and any(espanol_dir.glob("*.pdf")):
+            st.markdown("---")
+            st.markdown("### Descargar Archivos Traducidos")
+            
+            # Listar archivos disponibles
+            translated_files = list(espanol_dir.glob("*"))
+            files_list = []
+            for f in translated_files:
+                files_list.append({
+                    "Archivo": f.name,
+                    "Tipo": "PDF" if f.suffix.lower() == ".pdf" else "Markdown (Texto)",
+                    "Tamaño (KB)": round(f.stat().st_size / 1024, 2)
+                })
+            st.dataframe(pd.DataFrame(files_list), use_container_width=True)
+            
+            # Crear botón de descarga para ZIP
             try:
-                status.write("Inicializando Argos Translate (puede tardar en descargar el modelo si es la primera vez)...")
-                translator = get_argos_translator("en", "es", device=device_type)
-                if not translator:
-                    status.update(label="Error al inicializar el traductor", state="error")
-                    st.error("No se pudo cargar o descargar el paquete de idioma Inglés -> Español.")
-                    return
-                status.update(label="Motor de traducción cargado correctamente.", state="complete")
-            except Exception as e:
-                status.update(label="Error de inicialización", state="error")
-                st.error(f"Ocurrió un error al cargar el traductor: {e}")
-                return
-
-        # Barra de progreso
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        translated_count = 0
-        
-        # Procesar fila por fila
-        for idx, row in rows_to_translate.iterrows():
-            status_text.text(f"Traduciendo fila {translated_count + 1} de {total_rows}...")
-            
-            # Traducir Titulo si aplica
-            titulo_original = row.get("Titulo", "")
-            current_translated_title = df.at[idx, "Titulo ES"]
-            
-            if not solo_vacias or is_empty_value(current_translated_title):
-                if not is_empty_value(titulo_original):
-                    try:
-                        df.at[idx, "Titulo ES"] = translator.translate(str(titulo_original).strip())
-                    except Exception as ex:
-                        df.at[idx, "Titulo ES"] = f"Error: {ex}"
-                else:
-                    df.at[idx, "Titulo ES"] = ""
-
-            # Traducir Abstract si aplica
-            abstract_original = row.get("Abstract", "")
-            current_translated_abstract = df.at[idx, "Abstract ES"]
-            
-            if not solo_vacias or is_empty_value(current_translated_abstract):
-                if not is_empty_value(abstract_original):
-                    try:
-                        df.at[idx, "Abstract ES"] = translator.translate(str(abstract_original).strip())
-                    except Exception as ex:
-                        df.at[idx, "Abstract ES"] = f"Error: {ex}"
-                else:
-                    df.at[idx, "Abstract ES"] = ""
-
-            translated_count += 1
-            progress_bar.progress(translated_count / total_rows)
-
-        status_text.text("Guardando cambios en scoping_master.xlsx...")
-        
-        # Guardar en session state y en archivo
-        st.session_state["master_df"] = df
-        safe_save_master_dataframe(df)
-        
-        progress_bar.empty()
-        status_text.empty()
-        st.success(f"¡Traducción completada con éxito! Se procesaron {total_rows} filas.")
-        st.rerun()
-
-    # Visualizar las columnas de traducción
-    st.markdown("### Vista previa de Traducciones")
-    cols_to_show = ["Fuente", "Titulo", "Titulo ES", "Abstract", "Abstract ES"]
-    existing_show_cols = [c for c in cols_to_show if c in df.columns]
-    st.dataframe(df[existing_show_cols].head(10), use_container_width=True)
+                zip_buffer = BytesIO()
+                with ZipFile(zip_buffer, "w", ZIP_DEFLATED) as zip_file:
+                    for f in translated_files:
+                        zip_file.write(f, f.name)
+                
+                st.download_button(
+                    label="📥 Descargar todo en un archivo ZIP",
+                    data=zip_buffer.getvalue(),
+                    file_name="pdfs_traducidos_espanol.zip",
+                    mime="application/zip",
+                    use_container_width=True
+                )
+                
+                # Botón de limpiar descargas
+                if st.button("🗑️ Limpiar historial de descargas", use_container_width=True):
+                    import shutil
+                    shutil.rmtree("output/pdf_traducciones", ignore_errors=True)
+                    st.success("Historial de traducciones limpiado.")
+                    st.rerun()
+            except Exception as zip_ex:
+                st.error(f"Error al preparar el ZIP de descarga: {zip_ex}")
 
 
 def safe_save_dataframe(df_to_save, filename):
