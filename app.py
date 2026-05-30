@@ -37,6 +37,8 @@ TOTAL_SCORE_COLUMN = "Total Score"
 CONFIG_FOLDER = Path("config")
 LLM_CONFIG_FILE = CONFIG_FOLDER / "llm_config.json"
 CRITERIA_FILE = CONFIG_FOLDER / "criteria.json"
+KEYWORDS_FILE = CONFIG_FOLDER / "keywords.json"
+
 
 
 st.set_page_config(
@@ -323,7 +325,23 @@ def update_total_score(df):
 def sync_criteria_columns():
     df = st.session_state.get("master_df", load_master_dataframe())
     criteria = st.session_state.get("criteria", [])
+    keywords = st.session_state.get("keywords", [])
     
+    # 1. Conservar los valores de palabras clave existentes
+    existing_kw_title = {} # keyword -> series
+    existing_kw_abstract = {} # keyword -> series
+    
+    for column in df.columns:
+        match_kw_title = re.match(r"^KW_Titulo:\s*(.+)$", column)
+        if match_kw_title:
+            kw = match_kw_title.group(1).strip()
+            existing_kw_title[kw] = df[column].copy()
+            
+        match_kw_abs = re.match(r"^KW_Abstract:\s*(.+)$", column)
+        if match_kw_abs:
+            kw = match_kw_abs.group(1).strip()
+            existing_kw_abstract[kw] = df[column].copy()
+
     # Mapeos basados en el TEXTO del criterio para evitar desalineación al reordenar o borrar
     existing_responses = {} # text -> series
     existing_subscores = {
@@ -359,13 +377,34 @@ def sync_criteria_columns():
                         existing_subscores[col_type][txt] = df[column].copy()
                         break
 
-    # Conservar columnas base (que no sean de criterios antiguos)
+    # Conservar columnas base (que no sean de criterios antiguos ni de palabras clave antiguas)
     base_columns = [
         column
         for column in df.columns
-        if not re.match(r"^(?:C\d+|Criterio\s+C\d+)\s+", column) and column != TOTAL_SCORE_COLUMN
+        if not re.match(r"^(?:C\d+|Criterio\s+C\d+)\s+", column) 
+           and not re.match(r"^KW_(?:Titulo|Abstract):\s*", column)
+           and column != TOTAL_SCORE_COLUMN
     ]
     df = df[base_columns].copy()
+
+    # Escribir las nuevas columnas de palabras clave antes de los criterios
+    for keyword in keywords:
+        kw = keyword.strip()
+        col_title = f"KW_Titulo: {kw}"
+        col_abstract = f"KW_Abstract: {kw}"
+        
+        if kw in existing_kw_title:
+            df[col_title] = existing_kw_title[kw]
+        else:
+            df[col_title] = ""
+            
+        if kw in existing_kw_abstract:
+            df[col_abstract] = existing_kw_abstract[kw]
+        else:
+            df[col_abstract] = ""
+            
+        df[col_title] = df[col_title].astype("object")
+        df[col_abstract] = df[col_abstract].astype("object")
 
     # Escribir las nuevas columnas respetando el nuevo orden/lista de criterios actual
     for index, criterion in enumerate(criteria, start=1):
@@ -390,6 +429,7 @@ def sync_criteria_columns():
     update_total_score(df)
     st.session_state["master_df"] = df
     safe_save_master_dataframe(df)
+
 
 
 def verify_cuda_working():
@@ -779,6 +819,26 @@ def save_criteria(criteria):
         json.dump(criteria, config_file, indent=2, ensure_ascii=False)
 
 
+def load_keywords():
+    if not KEYWORDS_FILE.exists():
+        return []
+    try:
+        with open(KEYWORDS_FILE, "r", encoding="utf-8") as config_file:
+            keywords = json.load(config_file)
+            if isinstance(keywords, list):
+                return [str(kw) for kw in keywords]
+            return []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def save_keywords(keywords):
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    with open(KEYWORDS_FILE, "w", encoding="utf-8") as config_file:
+        json.dump(keywords, config_file, indent=2, ensure_ascii=False)
+
+
+
 @st.cache_data(ttl=10, show_spinner=False)
 def fetch_ollama_models(endpoint):
     try:
@@ -1075,7 +1135,7 @@ def criteria_tab():
         st.button("Añadir criterio", use_container_width=True, on_click=handle_add_criterion)
 
     with col_apply:
-        if st.button("Sincronizar columnas", use_container_width=True):
+        if st.button("Sincronizar columnas de criterios", use_container_width=True):
             sync_criteria_columns()
             st.success("Columnas de criterios sincronizadas.")
 
@@ -1100,6 +1160,124 @@ def criteria_tab():
             sync_criteria_columns()
             st.success(f"Se eliminó {delete_id}: {removed.get('text', '')}. Los criterios fueron renumerados.")
             st.rerun()
+
+    # --- NUEVA SECCIÓN: PALABRAS CLAVE ---
+    st.markdown("---")
+    st.subheader("Búsqueda Rápida de Palabras Clave (por Código)")
+    st.write(
+        "Configura palabras clave u oraciones para buscar en el Titulo o Abstract de forma rápida. "
+        "Para cada palabra clave se generarán dos columnas (`KW_Titulo: <palabra>` y `KW_Abstract: <palabra>`) "
+        "con valor `1` si coincide (insensible a mayúsculas/minúsculas), `0` si no coincide y vacío si no se ha evaluado."
+    )
+
+    def handle_add_keyword():
+        val = st.session_state.get("new_keyword_input", "").strip()
+        if val:
+            if val not in st.session_state["keywords"]:
+                st.session_state["keywords"].append(val)
+                save_keywords(st.session_state["keywords"])
+                sync_criteria_columns()
+            else:
+                st.warning("Esa palabra clave ya existe.")
+        st.session_state["new_keyword_input"] = ""
+
+    if "new_keyword_input" not in st.session_state:
+        st.session_state["new_keyword_input"] = ""
+
+    col_kw_input, col_kw_btn = st.columns([3, 1])
+    with col_kw_input:
+        st.text_input(
+            "Nueva palabra clave u oración",
+            placeholder="Ej. machine learning",
+            key="new_keyword_input"
+        )
+    with col_kw_btn:
+        st.write("") # espaciador vertical
+        st.button("Añadir palabra clave", use_container_width=True, on_click=handle_add_keyword)
+
+    if st.session_state.get("keywords"):
+        # Mostrar palabras clave actuales
+        st.write("**Palabras clave configuradas:**")
+        kw_df = pd.DataFrame({"Palabra Clave / Oración": st.session_state["keywords"]})
+        st.dataframe(kw_df, use_container_width=True, hide_index=True)
+
+        # Eliminar palabra clave
+        col_del_kw, col_del_btn = st.columns([3, 1])
+        with col_del_kw:
+            delete_kw = st.selectbox("Palabra clave a eliminar", st.session_state["keywords"], key="delete_kw_select")
+            confirm_delete_kw = st.checkbox(
+                f"Confirmo que quiero eliminar la palabra clave: '{delete_kw}'",
+                key="confirm_delete_kw",
+            )
+        with col_del_btn:
+            st.write("") # espaciador
+            st.write("") # espaciador
+            if st.button("Eliminar palabra clave", disabled=not confirm_delete_kw, use_container_width=True):
+                st.session_state["keywords"].remove(delete_kw)
+                save_keywords(st.session_state["keywords"])
+                sync_criteria_columns()
+                st.success(f"Palabra clave '{delete_kw}' eliminada.")
+                st.rerun()
+
+        # Ejecución de la búsqueda rápida
+        st.markdown("### Ejecutar Búsqueda Rápida")
+        overwrite_kw = st.checkbox(
+            "Evaluar todas las filas (sobreescribir)", 
+            value=True, 
+            help="Si está desmarcado, solo buscará en las filas que tengan las columnas vacías (no evaluadas)."
+        )
+
+        if st.button("Ejecutar búsqueda por código", type="primary", use_container_width=True):
+            df = st.session_state.get("master_df", load_master_dataframe())
+            if df.empty:
+                st.warning("Carga o procesa la tabla maestra antes de realizar la búsqueda.")
+            else:
+                # Sincronizar por si acaso
+                sync_criteria_columns()
+                df = st.session_state["master_df"]
+
+                # Preparar textos para búsqueda case-insensitive
+                title_series = df["Titulo"].fillna("").astype(str)
+                if "Titulo ES" in df.columns:
+                    title_series = title_series + " " + df["Titulo ES"].fillna("").astype(str)
+
+                abstract_series = df["Abstract"].fillna("").astype(str)
+                if "Abstract ES" in df.columns:
+                    abstract_series = abstract_series + " " + df["Abstract ES"].fillna("").astype(str)
+
+                # Buscar para cada palabra clave
+                for keyword in st.session_state["keywords"]:
+                    kw_clean = keyword.lower().strip()
+                    col_title = f"KW_Titulo: {keyword}"
+                    col_abstract = f"KW_Abstract: {keyword}"
+
+                    # Crear la columna si no existe
+                    if col_title not in df.columns:
+                        df[col_title] = ""
+                    if col_abstract not in df.columns:
+                        df[col_abstract] = ""
+
+                    # Definir filas a evaluar
+                    if not overwrite_kw:
+                        mask_title = df[col_title].isna() | (df[col_title].astype(str).str.strip() == "")
+                        mask_abstract = df[col_abstract].isna() | (df[col_abstract].astype(str).str.strip() == "")
+                    else:
+                        mask_title = pd.Series(True, index=df.index)
+                        mask_abstract = pd.Series(True, index=df.index)
+
+                    # Substring match (regex=False para evitar caracteres especiales rotos y que sea ultra rápido)
+                    match_title = title_series.str.lower().str.contains(kw_clean, regex=False, na=False)
+                    match_abstract = abstract_series.str.lower().str.contains(kw_clean, regex=False, na=False)
+
+                    # Asignar 1 o 0 a las filas que cumplen la máscara
+                    df.loc[mask_title, col_title] = match_title[mask_title].map(lambda x: 1 if x else 0)
+                    df.loc[mask_abstract, col_abstract] = match_abstract[mask_abstract].map(lambda x: 1 if x else 0)
+
+                st.session_state["master_df"] = df
+                safe_save_master_dataframe(df)
+                st.success("Búsqueda de palabras clave completada. Las columnas en scoping_master.xlsx han sido actualizadas.")
+                st.rerun()
+
 
 
 def translate_pdf_with_fitz_and_md(input_path, output_pdf_path, output_md_path, translator, progress_callback=None):
@@ -1644,6 +1822,10 @@ def main():
 
     if "criteria" not in st.session_state:
         st.session_state["criteria"] = load_criteria()
+
+    if "keywords" not in st.session_state:
+        st.session_state["keywords"] = load_keywords()
+
 
     st.title("CribadoLabs")
     st.caption("MVP para cargar fuentes, consolidar registros y preparar cribado académico.")
