@@ -1,6 +1,4 @@
 {
-  "provider": "OpenRouter",
-  "endpoint": "http://100.90.193.113:11434",
-  "model": "meta-llama/llama-3.3-70b-instruct:free",
-  "api_key": "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"
+  "endpoint": "http://localhost:11434",
+  "model": "qwen3:4b-instruct-2507-q4_k_m"
 }

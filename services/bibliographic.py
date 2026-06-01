@@ -1,9 +1,11 @@
+"""Procesamiento bibliográfico: parseo, normalización, deduplicación."""
+
 from pathlib import Path
-import os
-import re
 
 import bibtexparser
 import pandas as pd
+
+from services.persistence import save_master_dataframe, load_master_dataframe
 
 
 INPUT_FOLDER = Path("data")
@@ -210,62 +212,3 @@ def build_master_dataframe(rows):
     df = df.sort_values(by="Año", ascending=False, na_position="last")
 
     return df
-
-
-def save_master_dataframe(df, output_folder=OUTPUT_FOLDER, filename=MASTER_FILENAME):
-    output_folder = Path(output_folder)
-    output_folder.mkdir(parents=True, exist_ok=True)
-    output_file = output_folder / filename
-    
-    # Limpiar cualquier caracter de control ASCII que no sea válido en XML 1.0
-    df_clean = df.copy()
-    invalid_xml_re = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
-    for col in df_clean.columns:
-        if df_clean[col].dtype == object:
-            df_clean[col] = df_clean[col].apply(lambda x: invalid_xml_re.sub('', str(x)) if isinstance(x, str) else x)
-            
-    # Escribir primero en un archivo temporal para evitar corromper el original si falla
-    temp_file = output_file.with_suffix(".tmp.xlsx")
-    df_clean.to_excel(temp_file, index=False)
-    
-    # Reemplazo atómico
-    if temp_file.exists():
-        if output_file.exists():
-            try:
-                os.replace(temp_file, output_file)
-            except Exception:
-                # Fallback si os.replace falla (ej. bloqueos en Windows)
-                import shutil
-                shutil.move(str(temp_file), str(output_file))
-        else:
-            temp_file.rename(output_file)
-            
-    return output_file
-
-
-def load_master_dataframe(path=OUTPUT_FOLDER / MASTER_FILENAME):
-    path = Path(path)
-    if not path.exists():
-        return pd.DataFrame(columns=NORMALIZED_COLUMNS)
-
-    try:
-        df = pd.read_excel(path)
-    except Exception as e:
-        raise RuntimeError(
-            f"El archivo '{path.name}' está dañado o incompleto (se interrumpió la escritura). "
-            f"Hemos creado una copia de seguridad de la versión dañada en 'output/scoping_master_corrupted.xlsx'. "
-            f"Puedes recuperarlo desde tu Git o volver a procesar tu carpeta de origen. Error original: {e}"
-        )
-    
-    # Asegurar que todas las columnas de la especificación existan en el DataFrame cargado y tengan tipo object
-    for col in NORMALIZED_COLUMNS:
-        if col not in df.columns:
-            df[col] = ""
-        df[col] = df[col].astype(object)
-            
-    # Asegurar que el nuevo orden de columnas se aplique a archivos existentes
-    existing_cols = list(df.columns)
-    ordered_base_cols = [col for col in NORMALIZED_COLUMNS if col in existing_cols]
-    extra_cols = [col for col in existing_cols if col not in ordered_base_cols]
-    
-    return df[ordered_base_cols + extra_cols]

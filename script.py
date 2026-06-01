@@ -1,4 +1,5 @@
-from bibliographic_processor import OUTPUT_FOLDER, process_folder, save_master_dataframe
+from services.bibliographic import process_folder
+from services.persistence import OUTPUT_FOLDER, save_master_dataframe
 
 
 def main():
