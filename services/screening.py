@@ -36,8 +36,11 @@ OLLAMA_OPTIONS_CRITERIO = {
     "num_predict": 256,
 }
 
-# Definición de criterios
-CRITERIOS_INCLUSION = {
+# ---------------------------------------------------------------------------
+# Criterios dinámicos desde config/criteria.json
+# ---------------------------------------------------------------------------
+
+CRITERIOS_INCLUSION_DEFAULT = {
     "I1": {
         "nombre": "I1 - Artefacto computacional",
         "descripcion": (
@@ -74,7 +77,7 @@ CRITERIOS_INCLUSION = {
     },
 }
 
-CRITERIOS_EXCLUSION = {
+CRITERIOS_EXCLUSION_DEFAULT = {
     "E1": {
         "nombre": "E1 - Exclusión: Humano-robot/AI",
         "descripcion": (
@@ -147,6 +150,53 @@ CRITERIOS_EXCLUSION = {
 }
 
 
+def cargar_criterios_dinamicos() -> tuple[dict, dict]:
+    """Carga criterios desde config/criteria.json. Si no existe o esta vacio, usa defaults."""
+    path = CONFIG_DIR / "criteria.json"
+    default_inclusion = CRITERIOS_INCLUSION_DEFAULT
+    default_exclusion = CRITERIOS_EXCLUSION_DEFAULT
+
+    if not path.exists():
+        return default_inclusion, default_exclusion
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return default_inclusion, default_exclusion
+
+    if not data or not isinstance(data, list):
+        return default_inclusion, default_exclusion
+
+    inclusion = {}
+    exclusion = {}
+    inc_counter = 1
+    exc_counter = 1
+
+    for item in data:
+        text = item.get("text", "").strip()
+        ctype = item.get("type", "inclusion")
+        if not text:
+            continue
+        cfg = {
+            "nombre": text,
+            "descripcion": text,
+            "pregunta": f"¿{text}?",
+        }
+        if ctype == "inclusion":
+            inclusion[f"I{inc_counter}"] = cfg
+            inc_counter += 1
+        else:
+            exclusion[f"E{exc_counter}"] = cfg
+            exc_counter += 1
+
+    # Si no hay criterios definidos, usar defaults
+    if not inclusion and not exclusion:
+        return default_inclusion, default_exclusion
+
+    return inclusion, exclusion
+
+
 # ---------------------------------------------------------------------------
 # Utilidades de texto
 # ---------------------------------------------------------------------------
@@ -176,41 +226,71 @@ def _build_corpus(df: pd.DataFrame) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def cargar_keywords_screening(path: Path = KEYWORDS_FILE) -> dict:
-    """Carga keywords de screening desde JSON."""
+    """Carga keywords de screening desde JSON. Soporta formato nuevo (terminos_busqueda) y antiguo."""
     default = {
-        "keywords_colaboracion": [
-            "collaboration quality", "collaborative quality", "quality of collaboration",
-            "collaboration analytics", "collaborative analytics",
-            "multimodal learning analytics", "MMLA",
-            "co-located collaboration", "collocated collaboration",
-            "face-to-face collaboration", "collaboration assessment",
-            "collaboration measurement", "interpersonal synchrony",
-            "inter-brain synchrony", "teamwork quality",
-            "collaborative convergence", "embodied teamwork",
-            "socio-spatial analytics", "collaboration modeling",
-            "interaction analysis", "nonverbal cues",
-            "augmented reality collaboration", "evaluating collaboration",
-            "multi-sensory cues", "learning analytics",
-            "computer vision", "team communication",
+        "terminos_busqueda": [
+            "collaboration quality",
+            "collaborative quality",
+            "quality of collaboration",
+            "collaboration analytics",
+            "collaborative analytics",
+            "multimodal learning analytics",
+            "MMLA",
+            "co-located collaboration",
+            "collocated collaboration",
+            "face-to-face collaboration",
+            "collaboration assessment",
+            "collaboration measurement",
+            "interpersonal synchrony",
+            "inter-brain synchrony",
+            "teamwork quality",
+            "collaborative convergence",
+            "embodied teamwork",
+            "socio-spatial analytics",
+            "collaboration modeling",
+            "interaction analysis",
+            "nonverbal cues",
+            "augmented reality collaboration",
+            "evaluating collaboration",
+            "multi-sensory cues",
+            "learning analytics",
+            "computer vision",
+            "team communication",
+            "co-located",
+            "collocated",
+            "face-to-face",
+            "face to face",
+            "same room",
+            "co-present",
+            "in-person",
+            "presencial",
+            "cara a cara",
+            "shared space",
+            "same place",
+            "physical presence",
+            "co-presence",
+            "joint activity",
+            "interaction quality",
+            "coordination quality",
+            "mutual understanding",
+            "shared understanding",
+            "common ground",
+            "group awareness",
+            "team awareness",
+            "collaboration effectiveness",
+            "collaborative performance",
         ],
-        "keywords_contexto": [
-            "co-located", "collocated", "face-to-face", "face to face",
-            "same room", "co-present", "in-person", "presencial",
-            "cara a cara", "cave", "shared space", "same place",
-            "physical presence", "co-presence", "joint activity",
-        ],
-        "sinonimos_calidad": [
-            "interaction quality", "coordination quality",
-            "mutual understanding", "shared understanding",
-            "common ground", "group awareness", "team awareness",
-            "collaboration effectiveness", "collaborative performance",
-        ],
+        # Campos antiguos se mantienen por retrocompatibilidad del pipeline automático
+        "keywords_colaboracion": [],
+        "keywords_contexto": [],
+        "sinonimos_calidad": [],
     }
     if not path.exists():
         return default
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
+        # Asegurar que existan todas las claves
         for k in default:
             if k not in data or not isinstance(data[k], list):
                 data[k] = default[k]
@@ -285,13 +365,21 @@ Respond ONLY in strict JSON with no markdown, no code blocks, no extra text:
 # Fase 0: Pre-filtrado por keywords con scoring
 # ---------------------------------------------------------------------------
 
+def _build_corpus_text(row: pd.Series) -> str:
+    """Construye texto concatenado de Titulo, Abstract, Keywords y traducciones."""
+    parts = []
+    for col in ["Titulo", "Abstract", "Keywords", "Titulo ES", "Abstract ES"]:
+        if col in row.index and pd.notna(row[col]):
+            parts.append(str(row[col]))
+    return " ".join(parts)
+
+
 def fase0_prefiltrado(df_master: pd.DataFrame, keywords_config: dict | None = None) -> tuple[pd.DataFrame, dict]:
     """
-    Pre-filtrado por keywords con scoring.
-    Score_colaboracion (max 3) + Score_contexto (max 2) + Score_sinonimos (max 1) = Total max 6.
-    Total >= 2: Pasa a Fase 1.
-    Total == 1: Dudoso.
-    Total == 0: Excluido.
+    Pre-filtrado por keywords.
+    Si keywords_config contiene 'terminos_busqueda', usa el nuevo sistema dinámico
+    (una columna por término, búsqueda exacta case-insensitive).
+    Si no, usa el sistema antiguo de 3 categorías.
     """
     if df_master.empty:
         df = df_master.copy()
@@ -300,6 +388,13 @@ def fase0_prefiltrado(df_master: pd.DataFrame, keywords_config: dict | None = No
         return df, {"total": 0, "pasan": 0, "dudosos": 0, "excluidos": 0}
 
     kw = keywords_config if keywords_config is not None else cargar_keywords_screening()
+
+    # Preferir nuevo formato de términos dinámicos
+    terminos = [t.strip() for t in kw.get("terminos_busqueda", []) if t.strip()]
+    if terminos:
+        return fase0_busqueda_terminos(df_master, terminos, clasificar=True)
+
+    # Fallback al sistema antiguo de 3 categorías
     k_col = [k.lower() for k in kw.get("keywords_colaboracion", [])]
     k_ctx = [k.lower() for k in kw.get("keywords_contexto", [])]
     k_sin = [k.lower() for k in kw.get("sinonimos_calidad", [])]
@@ -333,12 +428,7 @@ def fase0_prefiltrado(df_master: pd.DataFrame, keywords_config: dict | None = No
     keywords_found = []
 
     for _, row in df.iterrows():
-        parts = []
-        for col in ["Titulo", "Abstract", "Keywords", "Titulo ES", "Abstract ES"]:
-            if col in row.index and pd.notna(row[col]):
-                parts.append(str(row[col]))
-        text = " ".join(parts)
-
+        text = _build_corpus_text(row)
         sc, sctx, ssin, found = _score_text(text)
         total = sc + sctx + ssin
         scores.append(total)
@@ -373,6 +463,147 @@ def fase0_prefiltrado(df_master: pd.DataFrame, keywords_config: dict | None = No
     return df, reporte
 
 
+def _termino_en_titulo_o_abstract(row: pd.Series, termino: str) -> int:
+    """Busca el término en Titulo o Abstract (case-insensitive, frase exacta)."""
+    titulo = str(row.get("Titulo", "")).lower()
+    abstract = str(row.get("Abstract", "")).lower()
+    term_lower = termino.lower()
+    return 1 if (term_lower in titulo or term_lower in abstract) else 0
+
+
+def fase0_busqueda_terminos(
+    df_master: pd.DataFrame,
+    terminos: list[str],
+    clasificar: bool = False,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Para cada término, crea una columna con valor 1 si aparece en Título O Abstract
+    (búsqueda exacta case-insensitive de la frase completa). Cada término aporta
+    máximo 1 punto, sin importar si aparece en título, abstract o ambos.
+
+    También genera F0_Score con la suma total de coincidencias por fila.
+    Si clasificar=True, genera además F0_Pasa/Dudoso/Excluido (uso del pipeline automático).
+    Si clasificar=False (búsqueda manual), solo genera las columnas de términos y el score.
+    """
+    if df_master.empty:
+        return df_master.copy(), {"total": 0, "terminos": {}, "coincidencias": 0, "max_score": 0}
+
+    df = df_master.copy()
+    terminos_limpios = [t.strip() for t in terminos if t.strip()]
+    reporte_terminos: dict[str, int] = {}
+
+    for termino in terminos_limpios:
+        col_name = termino
+        reporte_terminos[col_name] = 0
+        matches = []
+
+        for _, row in df.iterrows():
+            found = _termino_en_titulo_o_abstract(row, termino)
+            matches.append(found)
+            if found:
+                reporte_terminos[col_name] += 1
+
+        df[col_name] = matches
+
+    if terminos_limpios:
+        df["F0_Score"] = df[terminos_limpios].sum(axis=1)
+    else:
+        df["F0_Score"] = 0
+
+    # Ordenar por F0_Score descendente para que la tabla y la evaluación F1
+    # usen el mismo orden (mayor score primero)
+    df = df.sort_values("F0_Score", ascending=False).reset_index(drop=True)
+
+    if clasificar:
+        df["F0_Pasa"] = df["F0_Score"] >= 2
+        df["F0_Dudoso"] = df["F0_Score"] == 1
+        df["F0_Excluido"] = df["F0_Score"] == 0
+        df["F0_KeywordsEncontradas"] = ""
+        reporte = {
+            "total": len(df),
+            "pasan": int(df["F0_Pasa"].sum()),
+            "dudosos": int(df["F0_Dudoso"].sum()),
+            "excluidos": int(df["F0_Excluido"].sum()),
+            "terminos": reporte_terminos,
+        }
+    else:
+        reporte = {
+            "total": len(df),
+            "terminos": reporte_terminos,
+            "coincidencias": int((df["F0_Score"] > 0).sum()),
+            "max_score": int(df["F0_Score"].max()) if not df.empty else 0,
+        }
+
+    return df, reporte
+
+
+def fase0_limpiar_terminos(df: pd.DataFrame, terminos: list[str]) -> pd.DataFrame:
+    """Pone a 0 las columnas de los términos indicados y recalcula F0_Score."""
+    df = df.copy()
+    terminos_limpios = [t.strip() for t in terminos if t.strip()]
+    cols_existentes = []
+    for termino in terminos_limpios:
+        if termino in df.columns:
+            df[termino] = 0
+            cols_existentes.append(termino)
+    if cols_existentes:
+        df["F0_Score"] = df[cols_existentes].sum(axis=1)
+    else:
+        df["F0_Score"] = 0
+    df["F0_Pasa"] = df["F0_Score"] >= 2
+    df["F0_Dudoso"] = df["F0_Score"] == 1
+    df["F0_Excluido"] = df["F0_Score"] == 0
+    return df
+
+
+def fase0_sumar_score(df: pd.DataFrame, terminos: list[str]) -> pd.DataFrame:
+    """Recalcula F0_Score a partir de las columnas de términos existentes."""
+    df = df.copy()
+    terminos_limpios = [t.strip() for t in terminos if t.strip()]
+    cols_existentes = [t for t in terminos_limpios if t in df.columns]
+    if cols_existentes:
+        df["F0_Score"] = df[cols_existentes].sum(axis=1)
+    else:
+        df["F0_Score"] = 0
+    # Asegurar que existan las columnas de decisión
+    for col in ["F0_Pasa", "F0_Dudoso", "F0_Excluido", "F0_KeywordsEncontradas"]:
+        if col not in df.columns:
+            df[col] = False if col != "F0_KeywordsEncontradas" else ""
+    df["F0_Pasa"] = df["F0_Score"] >= 2
+    df["F0_Dudoso"] = df["F0_Score"] == 1
+    df["F0_Excluido"] = df["F0_Score"] == 0
+    return df
+
+
+def fase0_reiniciar_terminos(
+    df: pd.DataFrame,
+    terminos_actuales: list[str],
+    terminos_guardados: list[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Elimina todas las columnas de términos de búsqueda y las columnas F0 asociadas
+    para poder regenerarlas desde cero.
+    """
+    df = df.copy()
+    todos_terminos: set[str] = set(t.strip() for t in terminos_actuales if t.strip())
+    if terminos_guardados:
+        todos_terminos.update(t.strip() for t in terminos_guardados if t.strip())
+
+    cols_a_eliminar = []
+    for termino in todos_terminos:
+        if termino in df.columns:
+            cols_a_eliminar.append(termino)
+
+    for col in ["F0_Score", "F0_Pasa", "F0_Dudoso", "F0_Excluido", "F0_KeywordsEncontradas"]:
+        if col in df.columns:
+            cols_a_eliminar.append(col)
+
+    if cols_a_eliminar:
+        df = df.drop(columns=cols_a_eliminar)
+
+    return df
+
+
 # ---------------------------------------------------------------------------
 # Fase 1: Cribado por Criterio Individual (13 prompts por fila)
 # ---------------------------------------------------------------------------
@@ -395,7 +626,8 @@ def fase1_cribado_por_criterio(
 
     df = df_f0.copy()
 
-    all_cids = list(CRITERIOS_INCLUSION.keys()) + list(CRITERIOS_EXCLUSION.keys())
+    inclusion_cfg, exclusion_cfg = cargar_criterios_dinamicos()
+    all_cids = list(inclusion_cfg.keys()) + list(exclusion_cfg.keys())
     for cid in all_cids:
         for suffix in ["cumple", "confianza", "justificacion", "evidencia"]:
             col = f"F1_{cid}_{suffix}"
@@ -407,8 +639,20 @@ def fase1_cribado_por_criterio(
         if col not in df.columns:
             df[col] = "" if col in ("F1_Decision", "F1_CriterioExclusion") else (0.0 if col == "F1_Score_PI" else False)
 
-    mask_eval = df.get("F0_Pasa", False) | df.get("F0_Dudoso", False)
-    idx_candidates = df[mask_eval].index.tolist()
+    # Determinar candidatos: si existe clasificación F0, usarla; si no, usar score > 0; si no hay nada, todos
+    has_f0_classification = "F0_Pasa" in df.columns or "F0_Dudoso" in df.columns
+    if has_f0_classification:
+        mask_eval = df.get("F0_Pasa", False) | df.get("F0_Dudoso", False)
+    elif "F0_Score" in df.columns:
+        mask_eval = df["F0_Score"] > 0
+    else:
+        mask_eval = pd.Series(True, index=df.index)
+
+    # Ordenar por F0_Score descendente para evaluar primero los más prometedores
+    candidates_df = df[mask_eval].copy()
+    if "F0_Score" in candidates_df.columns:
+        candidates_df = candidates_df.sort_values("F0_Score", ascending=False)
+    idx_candidates = candidates_df.index.tolist()
 
     total_filas = len(idx_candidates)
     total_tasks = total_filas * len(all_cids)
@@ -440,7 +684,7 @@ def fase1_cribado_por_criterio(
         error_en_fila = False
 
         for cid in all_cids:
-            config = CRITERIOS_INCLUSION.get(cid) or CRITERIOS_EXCLUSION.get(cid)
+            config = inclusion_cfg.get(cid) or exclusion_cfg.get(cid)
             if config is None:
                 continue
 
@@ -494,10 +738,10 @@ def fase1_cribado_por_criterio(
             if delay > 0 and completed < total_tasks:
                 time.sleep(delay)
 
-        inclusion_cumple = all(resultados_fila.get(cid, {}).get("cumple", False) for cid in CRITERIOS_INCLUSION)
-        exclusiones_activas = [cid for cid in CRITERIOS_EXCLUSION if resultados_fila.get(cid, {}).get("cumple", False)]
+        inclusion_cumple = all(resultados_fila.get(cid, {}).get("cumple", False) for cid in inclusion_cfg)
+        exclusiones_activas = [cid for cid in exclusion_cfg if resultados_fila.get(cid, {}).get("cumple", False)]
         exclusion_cumple = len(exclusiones_activas) > 0
-        score_pi = sum(resultados_fila.get(cid, {}).get("confianza", 0) for cid in CRITERIOS_INCLUSION)
+        score_pi = sum(resultados_fila.get(cid, {}).get("confianza", 0) for cid in inclusion_cfg)
 
         num_exclusiones = len(exclusiones_activas)
         max_conf_exclusion = max(
@@ -537,6 +781,364 @@ def fase1_cribado_por_criterio(
 
 
 # ---------------------------------------------------------------------------
+# Nuevos Prompts para F1 (scoring 0-2 inclusión, 0-1 exclusión)
+# ---------------------------------------------------------------------------
+
+def _build_prompt_inclusion(titulo: str, abstract: str, cid: str, config: dict) -> str:
+    """Prompt para evaluar un criterio de inclusión con score 0/1/2."""
+    nombre = config["nombre"]
+    descripcion = config["descripcion"]
+    return f"""You are a strict scientific screening assistant for scoping reviews.
+Your task is to evaluate ONE INCLUSION criterion for one bibliographic record.
+Be highly conservative. Do NOT infer missing details.
+
+RECORD:
+Title: {titulo}
+Abstract: {abstract}
+
+INCLUSION CRITERION: {nombre}
+DESCRIPTION: {descripcion}
+
+INSTRUCTIONS:
+1. Read the title and abstract carefully.
+2. Score how strongly this criterion applies to the study:
+   - 2 = The criterion is EXACTLY met / central to the study's main focus.
+   - 1 = The criterion is mentioned or applies SECONDARILY / tangentially.
+   - 0 = The criterion does NOT apply / is absent.
+3. Do NOT guess. If unsure, score 0.
+4. Be conservative: when in doubt, say 0.
+
+Respond ONLY in strict JSON with no markdown, no code blocks, no extra text:
+{{
+  "score": 0 or 1 or 2,
+  "justificacion": "one short sentence in Spanish explaining the score"
+}}
+""".strip()
+
+
+def _build_prompt_exclusion(titulo: str, abstract: str, cid: str, config: dict) -> str:
+    """Prompt para evaluar un criterio de exclusión con score 0/1."""
+    nombre = config["nombre"]
+    descripcion = config["descripcion"]
+    return f"""You are a strict scientific screening assistant for scoping reviews.
+Your task is to evaluate ONE EXCLUSION criterion for one bibliographic record.
+Be highly conservative. Do NOT infer missing details.
+
+RECORD:
+Title: {titulo}
+Abstract: {abstract}
+
+EXCLUSION CRITERION: {nombre}
+DESCRIPTION: {descripcion}
+
+INSTRUCTIONS:
+1. Read the title and abstract carefully.
+2. Score whether this exclusion criterion applies:
+   - 1 = The study CLEARLY matches this exclusion criterion (e.g., explicit mention of excluded topics).
+   - 0 = The study does NOT match this exclusion criterion.
+3. Only score 1 if there is CLEAR evidence. If only mentioned in passing or unclear → 0.
+4. Be conservative: do NOT exclude unless clearly proven.
+
+Respond ONLY in strict JSON with no markdown, no code blocks, no extra text:
+{{
+  "score": 0 or 1,
+  "justificacion": "one short sentence in Spanish explaining the score"
+}}
+""".strip()
+
+
+# ---------------------------------------------------------------------------
+# Fase 1-Inclusión: Evaluación con scoring 0-2
+# ---------------------------------------------------------------------------
+
+def fase1_evaluar_inclusion(
+    df: pd.DataFrame,
+    llm_config: dict,
+    delay: float = 1.0,
+    progress_callback: Callable[[int, int], None] | None = None,
+    log_callback: Callable[[str], None] | None = None,
+    prompt_callback: Callable[[str], None] | None = None,
+    skip_evaluated: bool = True,
+    max_chars_abstract: int = 300,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Evalúa los 4 criterios de inclusión (I1-I4) con scoring 0/1/2.
+    Genera columnas F1_I{ N }_score y F1_I{ N }_justificacion.
+    Columna agregada: F1_Inclusion_Total.
+    """
+    endpoint = llm_config.get("endpoint", "http://localhost:11434")
+    model = llm_config.get("model", "llama3.1")
+    df = df.copy()
+
+    inclusion_cfg, _ = cargar_criterios_dinamicos()
+    inclusion_ids = list(inclusion_cfg.keys())
+    for cid in inclusion_ids:
+        for suffix in ["score", "justificacion"]:
+            col = f"F1_{cid}_{suffix}"
+            default = 0 if suffix == "score" else ""
+            if col not in df.columns:
+                df[col] = default
+
+    if "F1_Inclusion_Total" not in df.columns:
+        df["F1_Inclusion_Total"] = 0
+
+    # Candidatos: todos los registros (o los que tengan F0_Score > 0 si existe)
+    if "F0_Score" in df.columns:
+        mask = df["F0_Score"] > 0
+    else:
+        mask = pd.Series(True, index=df.index)
+    candidates_df = df[mask].copy()
+    if "F0_Score" in candidates_df.columns:
+        candidates_df = candidates_df.sort_values("F0_Score", ascending=False)
+    idx_candidates = candidates_df.index.tolist()
+
+    total = len(idx_candidates)
+    completed = 0
+    reporte = {cid: {"evaluadas": 0, "score_2": 0, "score_1": 0, "score_0": 0, "error": 0} for cid in inclusion_ids}
+
+    for idx in idx_candidates:
+        if skip_evaluated:
+            ya_evaluado = all(
+                df.at[idx, f"F1_{cid}_justificacion"] != "" or df.at[idx, f"F1_{cid}_score"] != 0
+                for cid in inclusion_ids
+            )
+            if ya_evaluado:
+                completed += len(inclusion_ids)
+                if progress_callback:
+                    progress_callback(completed, total * len(inclusion_ids))
+                continue
+
+        titulo_raw = str(df.at[idx, "Titulo"]) if "Titulo" in df.columns else ""
+        abstract_raw = str(df.at[idx, "Abstract"]) if "Abstract" in df.columns else ""
+        titulo, abstract = _truncar_registro(titulo_raw, abstract_raw, max_chars_abstract)
+
+        for cid in inclusion_ids:
+            config = inclusion_cfg[cid]
+            prompt = _build_prompt_inclusion(titulo, abstract, cid, config)
+
+            try:
+                if prompt_callback:
+                    prompt_callback(prompt)
+                if log_callback:
+                    log_callback(f"🔄 Fila {idx} | {cid} ...")
+                parsed = ollama_chat_with_retry(
+                    endpoint, model, prompt,
+                    max_retries=2, delay=delay, options=OLLAMA_OPTIONS_CRITERIO,
+                )
+                score = int(parsed.get("score", 0))
+                justif = str(parsed.get("justificacion", ""))
+                df.at[idx, f"F1_{cid}_score"] = score
+                df.at[idx, f"F1_{cid}_justificacion"] = justif
+                reporte[cid]["evaluadas"] += 1
+                reporte[cid][f"score_{score}"] += 1
+                if log_callback:
+                    log_callback(f"✅ Fila {idx} | {cid} → score={score}")
+            except Exception as exc:
+                df.at[idx, f"F1_{cid}_score"] = 0
+                df.at[idx, f"F1_{cid}_justificacion"] = f"ERROR: {exc}"
+                reporte[cid]["error"] += 1
+                if log_callback:
+                    log_callback(f"❌ Fila {idx} | {cid} → ERROR: {exc}")
+
+            completed += 1
+            if progress_callback:
+                progress_callback(completed, total * len(inclusion_ids))
+            if delay > 0 and completed < total * len(inclusion_ids):
+                time.sleep(delay)
+
+        # Recalcular total de inclusión para esta fila
+        total_inc = sum(int(df.at[idx, f"F1_{cid}_score"]) for cid in inclusion_ids)
+        df.at[idx, "F1_Inclusion_Total"] = total_inc
+
+    return df, reporte
+
+
+# ---------------------------------------------------------------------------
+# Fase 1-Exclusión: Evaluación con scoring 0/1
+# ---------------------------------------------------------------------------
+
+def fase1_evaluar_exclusion(
+    df: pd.DataFrame,
+    llm_config: dict,
+    delay: float = 1.0,
+    progress_callback: Callable[[int, int], None] | None = None,
+    log_callback: Callable[[str], None] | None = None,
+    prompt_callback: Callable[[str], None] | None = None,
+    skip_evaluated: bool = True,
+    max_chars_abstract: int = 300,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Evalúa los 9 criterios de exclusión (E1-E9) con scoring 0/1.
+    Genera columnas F1_E{ N }_score y F1_E{ N }_justificacion.
+    Columna agregada: F1_Exclusion_Total.
+    """
+    endpoint = llm_config.get("endpoint", "http://localhost:11434")
+    model = llm_config.get("model", "llama3.1")
+    df = df.copy()
+
+    _, exclusion_cfg = cargar_criterios_dinamicos()
+    exclusion_ids = list(exclusion_cfg.keys())
+    for cid in exclusion_ids:
+        for suffix in ["score", "justificacion"]:
+            col = f"F1_{cid}_{suffix}"
+            default = 0 if suffix == "score" else ""
+            if col not in df.columns:
+                df[col] = default
+
+    if "F1_Exclusion_Total" not in df.columns:
+        df["F1_Exclusion_Total"] = 0
+
+    # Candidatos: todos (o los con F0_Score > 0)
+    if "F0_Score" in df.columns:
+        mask = df["F0_Score"] > 0
+    else:
+        mask = pd.Series(True, index=df.index)
+    candidates_df = df[mask].copy()
+    if "F0_Score" in candidates_df.columns:
+        candidates_df = candidates_df.sort_values("F0_Score", ascending=False)
+    idx_candidates = candidates_df.index.tolist()
+
+    total = len(idx_candidates)
+    completed = 0
+    reporte = {cid: {"evaluadas": 0, "score_1": 0, "score_0": 0, "error": 0} for cid in exclusion_ids}
+
+    for idx in idx_candidates:
+        if skip_evaluated:
+            ya_evaluado = all(
+                df.at[idx, f"F1_{cid}_justificacion"] != "" or df.at[idx, f"F1_{cid}_score"] != 0
+                for cid in exclusion_ids
+            )
+            if ya_evaluado:
+                completed += len(exclusion_ids)
+                if progress_callback:
+                    progress_callback(completed, total * len(exclusion_ids))
+                continue
+
+        titulo_raw = str(df.at[idx, "Titulo"]) if "Titulo" in df.columns else ""
+        abstract_raw = str(df.at[idx, "Abstract"]) if "Abstract" in df.columns else ""
+        titulo, abstract = _truncar_registro(titulo_raw, abstract_raw, max_chars_abstract)
+
+        for cid in exclusion_ids:
+            config = exclusion_cfg[cid]
+            prompt = _build_prompt_exclusion(titulo, abstract, cid, config)
+
+            try:
+                if prompt_callback:
+                    prompt_callback(prompt)
+                if log_callback:
+                    log_callback(f"🔄 Fila {idx} | {cid} ...")
+                parsed = ollama_chat_with_retry(
+                    endpoint, model, prompt,
+                    max_retries=2, delay=delay, options=OLLAMA_OPTIONS_CRITERIO,
+                )
+                score = int(parsed.get("score", 0))
+                justif = str(parsed.get("justificacion", ""))
+                df.at[idx, f"F1_{cid}_score"] = score
+                df.at[idx, f"F1_{cid}_justificacion"] = justif
+                reporte[cid]["evaluadas"] += 1
+                reporte[cid][f"score_{score}"] += 1
+                if log_callback:
+                    log_callback(f"✅ Fila {idx} | {cid} → score={score}")
+            except Exception as exc:
+                df.at[idx, f"F1_{cid}_score"] = 0
+                df.at[idx, f"F1_{cid}_justificacion"] = f"ERROR: {exc}"
+                reporte[cid]["error"] += 1
+                if log_callback:
+                    log_callback(f"❌ Fila {idx} | {cid} → ERROR: {exc}")
+
+            completed += 1
+            if progress_callback:
+                progress_callback(completed, total * len(exclusion_ids))
+            if delay > 0 and completed < total * len(exclusion_ids):
+                time.sleep(delay)
+
+        # Recalcular total de exclusión para esta fila
+        total_exc = sum(int(df.at[idx, f"F1_{cid}_score"]) for cid in exclusion_ids)
+        df.at[idx, "F1_Exclusion_Total"] = total_exc
+
+    return df, reporte
+
+
+# ---------------------------------------------------------------------------
+# Gestión de columnas F1
+# ---------------------------------------------------------------------------
+
+def fase1_limpiar_inclusion(df: pd.DataFrame) -> pd.DataFrame:
+    """Pone a 0/vacío las columnas de inclusión y recalcula F1_Inclusion_Total."""
+    df = df.copy()
+    inclusion_cfg, _ = cargar_criterios_dinamicos()
+    for cid in inclusion_cfg:
+        col_score = f"F1_{cid}_score"
+        col_just = f"F1_{cid}_justificacion"
+        if col_score in df.columns:
+            df[col_score] = 0
+        if col_just in df.columns:
+            df[col_just] = ""
+    inclusion_ids = list(inclusion_cfg.keys())
+    cols = [f"F1_{cid}_score" for cid in inclusion_ids if f"F1_{cid}_score" in df.columns]
+    if cols:
+        df["F1_Inclusion_Total"] = df[cols].sum(axis=1)
+    else:
+        df["F1_Inclusion_Total"] = 0
+    return df
+
+
+def fase1_limpiar_exclusion(df: pd.DataFrame) -> pd.DataFrame:
+    """Pone a 0/vacío las columnas de exclusión y recalcula F1_Exclusion_Total."""
+    df = df.copy()
+    _, exclusion_cfg = cargar_criterios_dinamicos()
+    for cid in exclusion_cfg:
+        col_score = f"F1_{cid}_score"
+        col_just = f"F1_{cid}_justificacion"
+        if col_score in df.columns:
+            df[col_score] = 0
+        if col_just in df.columns:
+            df[col_just] = ""
+    exclusion_ids = list(exclusion_cfg.keys())
+    cols = [f"F1_{cid}_score" for cid in exclusion_ids if f"F1_{cid}_score" in df.columns]
+    if cols:
+        df["F1_Exclusion_Total"] = df[cols].sum(axis=1)
+    else:
+        df["F1_Exclusion_Total"] = 0
+    return df
+
+
+def fase1_sumar_inclusion(df: pd.DataFrame) -> pd.DataFrame:
+    """Recalcula F1_Inclusion_Total a partir de las columnas de score existentes."""
+    df = df.copy()
+    inclusion_cfg, _ = cargar_criterios_dinamicos()
+    inclusion_ids = list(inclusion_cfg.keys())
+    cols = [f"F1_{cid}_score" for cid in inclusion_ids if f"F1_{cid}_score" in df.columns]
+    if cols:
+        df["F1_Inclusion_Total"] = df[cols].sum(axis=1)
+    else:
+        df["F1_Inclusion_Total"] = 0
+    return df
+
+
+def fase1_sumar_exclusion(df: pd.DataFrame) -> pd.DataFrame:
+    """Recalcula F1_Exclusion_Total a partir de las columnas de score existentes."""
+    df = df.copy()
+    _, exclusion_cfg = cargar_criterios_dinamicos()
+    exclusion_ids = list(exclusion_cfg.keys())
+    cols = [f"F1_{cid}_score" for cid in exclusion_ids if f"F1_{cid}_score" in df.columns]
+    if cols:
+        df["F1_Exclusion_Total"] = df[cols].sum(axis=1)
+    else:
+        df["F1_Exclusion_Total"] = 0
+    return df
+
+
+def fase1_reiniciar_evaluacion(df: pd.DataFrame) -> pd.DataFrame:
+    """Elimina todas las columnas F1_* del DataFrame."""
+    df = df.copy()
+    cols_a_eliminar = [c for c in df.columns if c.startswith("F1_")]
+    if cols_a_eliminar:
+        df = df.drop(columns=cols_a_eliminar)
+    return df
+
+
+# ---------------------------------------------------------------------------
 # Fase 2: Revisión de Dudosos (contexto completo)
 # ---------------------------------------------------------------------------
 
@@ -567,11 +1169,12 @@ def fase2_revision_dudosos(
 
     cambios = {"DUDOSO->INCLUIR": 0, "DUDOSO->EXCLUIR": 0, "DUDOSO->DUDOSO": 0}
 
+    inclusion_cfg, exclusion_cfg = cargar_criterios_dinamicos()
     inclusion_text = "\n".join(
-        f"{cid}. {cfg['nombre']}: {cfg['descripcion']}" for cid, cfg in CRITERIOS_INCLUSION.items()
+        f"{cid}. {cfg['nombre']}: {cfg['descripcion']}" for cid, cfg in inclusion_cfg.items()
     )
     exclusion_text = "\n".join(
-        f"{cid}. {cfg['nombre']}: {cfg['descripcion']}" for cid, cfg in CRITERIOS_EXCLUSION.items()
+        f"{cid}. {cfg['nombre']}: {cfg['descripcion']}" for cid, cfg in exclusion_cfg.items()
     )
 
     for i, idx in enumerate(idx_candidates):

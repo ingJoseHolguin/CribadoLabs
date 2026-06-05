@@ -142,6 +142,16 @@ def translation_tab():
             key="pdf_uploader"
         )
 
+        # Boton de limpieza visible siempre (no solo cuando hay traducciones)
+        espanol_dir = Path("output/pdf_traducciones/espanol")
+        ingles_dir = Path("output/pdf_traducciones/ingles")
+        if espanol_dir.exists() and any(espanol_dir.glob("*.pdf")):
+            if st.button("🗑️ Limpiar PDFs traducidos anteriores", use_container_width=True, key="btn_clear_pdf_translations"):
+                import shutil
+                shutil.rmtree("output/pdf_traducciones", ignore_errors=True)
+                st.success("Carpeta de traducciones limpiada.")
+                st.rerun()
+
         if uploaded_files:
             st.write(f"**Archivos cargados ({len(uploaded_files)}):**")
             files_data = []
@@ -149,9 +159,9 @@ def translation_tab():
                 files_data.append({"Nombre": f.name, "Tamaño (KB)": round(len(f.getvalue()) / 1024, 2)})
             st.dataframe(pd.DataFrame(files_data), use_container_width=True)
 
+            skip_translated = st.checkbox("Saltar PDFs ya traducidos", value=True, key="skip_pdf_translated")
+
             if st.button("Iniciar traducción de PDFs", type="primary", key="btn_run_translate_pdf"):
-                ingles_dir = Path("output/pdf_traducciones/ingles")
-                espanol_dir = Path("output/pdf_traducciones/espanol")
                 ingles_dir.mkdir(parents=True, exist_ok=True)
                 espanol_dir.mkdir(parents=True, exist_ok=True)
 
@@ -173,27 +183,43 @@ def translation_tab():
 
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                total_files = len(uploaded_files)
 
-                for f_idx, f in enumerate(uploaded_files):
+                files_to_process = []
+                for f in uploaded_files:
                     filename = f.name
-                    ingles_path = ingles_dir / filename
-                    with open(ingles_path, "wb") as out_f:
-                        out_f.write(f.getvalue())
-
                     espanol_pdf_path = espanol_dir / filename
-                    espanol_md_path = espanol_dir / Path(filename).with_suffix(".md").name
-                    status_text.write(f"⏳ Procesando archivo {f_idx + 1}/{total_files}: **{filename}**...")
+                    if skip_translated and espanol_pdf_path.exists():
+                        continue
+                    files_to_process.append(f)
 
-                    try:
-                        def page_callback(page_num, total_pages):
-                            status_text.write(f"⏳ Traduciendo **{filename}** | Página {page_num + 1}/{total_pages}...")
+                total_files = len(files_to_process)
+                skipped = len(uploaded_files) - total_files
 
-                        translate_pdf_with_fitz_and_md(ingles_path, espanol_pdf_path, espanol_md_path, translator, page_callback)
-                    except Exception as ex:
-                        st.error(f"❌ Error al traducir {filename}: {ex}")
+                if skipped > 0:
+                    st.info(f"⏭️ {skipped} archivo(s) ya traducido(s) — se omite(n).")
 
-                    progress_bar.progress((f_idx + 1) / total_files)
+                if total_files == 0:
+                    st.success("¡Todos los PDFs subidos ya están traducidos!")
+                else:
+                    for f_idx, f in enumerate(files_to_process):
+                        filename = f.name
+                        ingles_path = ingles_dir / filename
+                        with open(ingles_path, "wb") as out_f:
+                            out_f.write(f.getvalue())
+
+                        espanol_pdf_path = espanol_dir / filename
+                        espanol_md_path = espanol_dir / Path(filename).with_suffix(".md").name
+                        status_text.write(f"⏳ Procesando archivo {f_idx + 1}/{total_files}: **{filename}**...")
+
+                        try:
+                            def page_callback(page_num, total_pages):
+                                status_text.write(f"⏳ Traduciendo **{filename}** | Página {page_num + 1}/{total_pages}...")
+
+                            translate_pdf_with_fitz_and_md(ingles_path, espanol_pdf_path, espanol_md_path, translator, page_callback)
+                        except Exception as ex:
+                            st.error(f"❌ Error al traducir {filename}: {ex}")
+
+                        progress_bar.progress((f_idx + 1) / total_files)
 
                 progress_bar.empty()
                 status_text.empty()
@@ -228,10 +254,5 @@ def translation_tab():
                     use_container_width=True
                 )
 
-                if st.button("🗑️ Limpiar historial de descargas", use_container_width=True):
-                    import shutil
-                    shutil.rmtree("output/pdf_traducciones", ignore_errors=True)
-                    st.success("Historial de traducciones limpiado.")
-                    st.rerun()
             except Exception as zip_ex:
                 st.error(f"Error al preparar el ZIP de descarga: {zip_ex}")

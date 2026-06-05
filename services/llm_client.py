@@ -8,7 +8,7 @@ import urllib.request
 from typing import Any
 
 
-def ollama_chat(endpoint: str, model: str, prompt: str, options: dict | None = None) -> str:
+def ollama_chat(endpoint: str, model: str, prompt: str, options: dict | None = None, force_json: bool = True) -> str:
     """Envía un prompt a Ollama y retorna el texto de respuesta."""
     default_options = {
         "num_ctx": 4096,
@@ -24,9 +24,10 @@ def ollama_chat(endpoint: str, model: str, prompt: str, options: dict | None = N
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "format": "json",
         "options": opts,
     }
+    if force_json:
+        payload["format"] = "json"
     request = urllib.request.Request(
         f"{endpoint}/api/chat",
         data=json.dumps(payload).encode("utf-8"),

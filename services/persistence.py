@@ -41,6 +41,25 @@ def atomic_save_excel(df: pd.DataFrame, output_path: Path) -> Path:
     return output_path
 
 
+def atomic_save_excel_multisheet(sheets: dict[str, pd.DataFrame], output_path: Path) -> Path:
+    """Guarda múltiples DataFrames como hojas en un solo Excel (.tmp -> rename)."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_file = output_path.with_suffix(".tmp.xlsx")
+    with pd.ExcelWriter(temp_file, engine="openpyxl") as writer:
+        for sheet_name, df in sheets.items():
+            clean_for_excel(df).to_excel(writer, sheet_name=sheet_name, index=False)
+    if temp_file.exists():
+        if output_path.exists():
+            try:
+                os.replace(str(temp_file), str(output_path))
+            except Exception:
+                shutil.move(str(temp_file), str(output_path))
+        else:
+            temp_file.rename(output_path)
+    return output_path
+
+
 def save_master_dataframe(df, output_folder=OUTPUT_FOLDER, filename=MASTER_FILENAME):
     """Guarda el DataFrame maestro en Excel de forma atómica."""
     output_folder = Path(output_folder)

@@ -12,6 +12,7 @@ from tabs.llm_settings import llm_settings_tab
 from tabs.screening import progressive_screening_tab
 from tabs.translation import translation_tab
 from tabs.filtering import filtering_tab
+from tabs.audio_summarizer import audio_summarizer_tab
 
 
 st.set_page_config(
@@ -46,12 +47,13 @@ def main():
         st.header("Arquitectura")
         st.write("1. Cargar fuentes")
         st.write("2. Procesar y editar")
-        st.write("3. Añadir criterios")
-        st.write("4. Configurar LLM")
-        st.write("5. Traducir contenido")
+        st.write("3. Configurar LLM")
+        st.write("4. Traducir contenido")
+        st.write("5. Cribado progresivo")
         st.write("6. Filtrar resultados (PRISMA)")
+        st.write("7. Audio & Resumen")
 
-    tab_sources, tab_processing, tab_criteria, tab_llm, tab_screening, tab_translation, tab_filtering = st.tabs(
+    tab_sources, tab_processing, tab_criteria, tab_llm, tab_screening, tab_translation, tab_filtering, tab_audio = st.tabs(
         [
             "Fuentes",
             "Tabla maestra",
@@ -59,7 +61,8 @@ def main():
             "LLM",
             "Cribado Progresivo",
             "Traducción",
-            "Filtrado (PRISMA)"
+            "Filtrado (PRISMA)",
+            "Audio & Resumen"
         ]
     )
 
@@ -77,6 +80,8 @@ def main():
         translation_tab()
     with tab_filtering:
         filtering_tab()
+    with tab_audio:
+        audio_summarizer_tab()
 
 
 if __name__ == "__main__":

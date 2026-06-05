@@ -1,5 +1,8 @@
 """Pestaña: Tabla maestra — procesamiento, edición interactiva y métricas."""
 
+import io
+from datetime import datetime
+
 import pandas as pd
 import streamlit as st
 
@@ -13,6 +16,20 @@ from services.bibliographic import (
 from services.criteria_manager import update_total_score
 from services.persistence import load_master_dataframe
 from tabs import safe_save_master_dataframe
+
+
+def _limpiar_columnas_antiguas(df):
+    """Elimina columnas residuales del sistema antiguo de criterios."""
+    import re
+    cols_a_eliminar = [
+        c for c in df.columns
+        if re.match(r"^(?:C\d+|Criterio\s+C\d+)\s+(Semantic|Context|Centrality|Evidence|Penalty|Total|Respuesta)", c, re.IGNORECASE)
+        or re.match(r"^KW_(Titulo|Abstract):", c)
+        or c == "Total Score"
+    ]
+    if cols_a_eliminar:
+        df = df.drop(columns=cols_a_eliminar)
+    return df
 
 
 def metric_cards(df):
@@ -57,6 +74,8 @@ def processing_tab():
         st.session_state["master_df"] = load_master_dataframe(OUTPUT_FOLDER / MASTER_FILENAME)
 
     df = st.session_state["master_df"]
+    df = _limpiar_columnas_antiguas(df)
+    st.session_state["master_df"] = df
     metric_cards(df)
 
     edited_df = st.data_editor(
@@ -76,6 +95,22 @@ def processing_tab():
         update_total_score(edited_df)
         output_file = safe_save_master_dataframe(edited_df)
         st.success(f"Cambios guardados en {output_file}.")
+
+    # Botón de descarga con fecha/hora en el nombre
+    col_download, _ = st.columns([1, 3])
+    with col_download:
+        now = datetime.now()
+        filename = now.strftime("%Y %m %d %Hh%Mm") + ".xlsx"
+        buffer = io.BytesIO()
+        edited_df.to_excel(buffer, index=False, engine="openpyxl")
+        buffer.seek(0)
+        st.download_button(
+            label="⬇️ Descargar Excel",
+            data=buffer,
+            file_name=filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
 
     with st.expander("Limpiar tabla maestra"):
         st.write("Esto vacía la tabla visible y guarda un Excel maestro sin registros.")

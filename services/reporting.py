@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
 
-from services.persistence import atomic_save_excel
+from services.persistence import atomic_save_excel, atomic_save_excel_multisheet
 
 
 OUTPUT_DIR = Path("output")
@@ -209,3 +209,46 @@ def generar_reporte_md(reporte: dict, output_path: Path | str) -> Path:
 
     output_path.write_text("\n".join(lines), encoding="utf-8")
     return output_path
+
+
+def exportar_fase1_con_hojas(
+    df: pd.DataFrame,
+    output_dir: Path | str = OUTPUT_DIR,
+) -> Path:
+    """
+    Exporta Fase 1 en un solo Excel con tres hojas:
+      - Maestro: DataFrame completo con todas las columnas.
+      - Incluidos: todos los registros que fueron evaluados por inclusion
+        (tienen F1_Inclusion_Total calculado).
+      - Excluidos: de los Incluidos, los que tienen F1_Exclusion_Total > 0.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / "fase1_inclusion_exclusion.xlsx"
+
+    sheets: dict[str, pd.DataFrame] = {"Maestro": df.copy()}
+
+    # Detectar si hubo evaluacion de inclusion: las columnas F1_I*_score existen
+    inclusion_cols = [c for c in df.columns if c.startswith("F1_I") and c.endswith("_score")]
+    if inclusion_cols:
+        # Incluidos: todos los que tienen al menos un score de inclusion definido
+        # (distinguimos evaluado vs no evaluado por la justificacion)
+        mask_incluidos = df[inclusion_cols].notna().any(axis=1)
+        # O si la columna total existe, usamos que no sea vacia/na
+        if "F1_Inclusion_Total" in df.columns:
+            mask_incluidos = mask_incluidos | df["F1_Inclusion_Total"].notna()
+        df_incluidos = df[mask_incluidos].copy() if mask_incluidos.any() else pd.DataFrame(columns=df.columns)
+        sheets["Incluidos"] = df_incluidos
+
+        # Excluidos: de los incluidos, los que tienen exclusion > 0
+        if "F1_Exclusion_Total" in df.columns and not df_incluidos.empty:
+            mask_excluidos = (df_incluidos["F1_Exclusion_Total"] > 0)
+            sheets["Excluidos"] = df_incluidos[mask_excluidos].copy() if mask_excluidos.any() else pd.DataFrame(columns=df.columns)
+        else:
+            sheets["Excluidos"] = pd.DataFrame(columns=df.columns)
+    else:
+        sheets["Incluidos"] = pd.DataFrame(columns=df.columns)
+        sheets["Excluidos"] = pd.DataFrame(columns=df.columns)
+
+    atomic_save_excel_multisheet(sheets, path)
+    return path
