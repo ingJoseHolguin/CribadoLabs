@@ -102,9 +102,10 @@ def progressive_screening_tab():
                         st.session_state["screening_f0_reporte"] = rep
                         exportar_excel_por_etapa(df_result, "fase0", OUTPUT_FOLDER)
                         exportar_resumen_excel(rep, "fase0", OUTPUT_FOLDER)
+                        safe_save_master_dataframe(df_result)
                     st.success(
                         f"Búsqueda completada — Registros con coincidencias={rep['coincidencias']}, "
-                        f"Score máximo={rep['max_score']}"
+                        f"Score máximo={rep['max_score']} (guardado en tabla maestra)"
                     )
                     # Mostrar tabla de frecuencias por término
                     if rep.get("terminos"):
@@ -122,6 +123,7 @@ def progressive_screening_tab():
                     df_cleared = fase0_limpiar_terminos(df_master, terminos_lista)
                     st.session_state["master_df"] = df_cleared
                     st.session_state["screening_f0_df"] = df_cleared
+                    safe_save_master_dataframe(df_cleared)
                     st.success("Valores de columnas de términos puestos a 0.")
         with c4:
             if st.button("➕ Sumar score", key="btn_sum_kw"):
@@ -131,6 +133,7 @@ def progressive_screening_tab():
                     df_scored = fase0_sumar_score(df_master, terminos_lista)
                     st.session_state["master_df"] = df_scored
                     st.session_state["screening_f0_df"] = df_scored
+                    safe_save_master_dataframe(df_scored)
                     st.success(f"Score recalculado. Máx={df_scored['F0_Score'].max()}")
         with c5:
             if st.button("🔄 Reiniciar y regenerar", key="btn_reset_kw"):
@@ -146,9 +149,10 @@ def progressive_screening_tab():
                         st.session_state["screening_f0_reporte"] = rep
                         exportar_excel_por_etapa(df_result, "fase0", OUTPUT_FOLDER)
                         exportar_resumen_excel(rep, "fase0", OUTPUT_FOLDER)
+                        safe_save_master_dataframe(df_result)
                     st.success(
                         f"Reinicio completado — Registros con coincidencias={rep['coincidencias']}, "
-                        f"Score máximo={rep['max_score']}"
+                        f"Score máximo={rep['max_score']} (guardado en tabla maestra)"
                     )
 
         st.caption(
@@ -254,7 +258,8 @@ def progressive_screening_tab():
                     st.session_state["screening_f1_df"] = df_inc
                     st.session_state["screening_f1_inc_reporte"] = rep_inc
                     exportar_excel_por_etapa(df_inc, "fase1", OUTPUT_FOLDER)
-                st.success(f"Inclusión evaluada — Total inc. máx={df_inc['F1_Inclusion_Total'].max()}")
+                    safe_save_master_dataframe(df_inc)
+                st.success(f"Inclusión evaluada — Total inc. máx={df_inc['F1_Inclusion_Total'].max()} (guardado en tabla maestra)")
                 progress_inc.empty()
 
     with col_exc:
@@ -292,24 +297,27 @@ def progressive_screening_tab():
                     st.session_state["screening_f1_df"] = df_exc
                     st.session_state["screening_f1_exc_reporte"] = rep_exc
                     exportar_excel_por_etapa(df_exc, "fase1", OUTPUT_FOLDER)
-                st.success(f"Exclusión evaluada — Total exc. máx={df_exc['F1_Exclusion_Total'].max()}")
+                    safe_save_master_dataframe(df_exc)
+                st.success(f"Exclusión evaluada — Total exc. máx={df_exc['F1_Exclusion_Total'].max()} (guardado en tabla maestra)")
                 progress_exc.empty()
 
     with col_gest:
         st.markdown("**Gestión**")
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("🧹 Limpiar Inc.", use_container_width=True, key="btn_clear_inc"):
                 df_eval = st.session_state.get("master_df", load_master_dataframe())
                 df_clean = fase1_limpiar_inclusion(df_eval)
                 st.session_state["master_df"] = df_clean
                 st.session_state["screening_f1_df"] = df_clean
+                safe_save_master_dataframe(df_clean)
                 st.success("Evaluación de inclusión limpiada.")
             if st.button("🧹 Limpiar Exc.", use_container_width=True, key="btn_clear_exc"):
                 df_eval = st.session_state.get("master_df", load_master_dataframe())
                 df_clean = fase1_limpiar_exclusion(df_eval)
                 st.session_state["master_df"] = df_clean
                 st.session_state["screening_f1_df"] = df_clean
+                safe_save_master_dataframe(df_clean)
                 st.success("Evaluación de exclusión limpiada.")
         with c2:
             if st.button("➕ Sumar Inc.", use_container_width=True, key="btn_sum_inc"):
@@ -317,12 +325,14 @@ def progressive_screening_tab():
                 df_scored = fase1_sumar_inclusion(df_eval)
                 st.session_state["master_df"] = df_scored
                 st.session_state["screening_f1_df"] = df_scored
+                safe_save_master_dataframe(df_scored)
                 st.success(f"Score de inclusión recalculado. Máx={df_scored['F1_Inclusion_Total'].max()}")
             if st.button("➕ Sumar Exc.", use_container_width=True, key="btn_sum_exc"):
                 df_eval = st.session_state.get("master_df", load_master_dataframe())
                 df_scored = fase1_sumar_exclusion(df_eval)
                 st.session_state["master_df"] = df_scored
                 st.session_state["screening_f1_df"] = df_scored
+                safe_save_master_dataframe(df_scored)
                 st.success(f"Score de exclusión recalculado. Máx={df_scored['F1_Exclusion_Total'].max()}")
         with c3:
             if st.button("🔄 Reiniciar F1", use_container_width=True, key="btn_reset_f1"):
@@ -330,6 +340,7 @@ def progressive_screening_tab():
                 df_clean = fase1_reiniciar_evaluacion(df_eval)
                 st.session_state["master_df"] = df_clean
                 st.session_state["screening_f1_df"] = df_clean
+                safe_save_master_dataframe(df_clean)
                 st.success("Todas las columnas F1 eliminadas.")
 
     # Botón para exportar F1 con hojas separadas
@@ -447,6 +458,8 @@ def progressive_screening_tab():
             st.session_state["screening_f3_reporte"] = rep_f3
             exportar_excel_por_etapa(df_f3, "fase3", OUTPUT_FOLDER)
             exportar_resumen_excel(rep_f3, "fase3", OUTPUT_FOLDER)
+            st.session_state["master_df"] = df_f3
+            safe_save_master_dataframe(df_f3)
         st.success(f"✅ F3 completado — PI1={rep_f3['por_pi']['PI1']}, PI2={rep_f3['por_pi']['PI2']}, PI3={rep_f3['por_pi']['PI3']}, PI4={rep_f3['por_pi']['PI4']}")
         progress_f3.empty()
 

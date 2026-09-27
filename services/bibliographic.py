@@ -1,10 +1,12 @@
 """Procesamiento bibliográfico: parseo, normalización, deduplicación."""
 
+import re
 from pathlib import Path
 
 import bibtexparser
 import pandas as pd
 
+from services.config import load_search_queries
 from services.persistence import save_master_dataframe, load_master_dataframe
 
 
@@ -24,54 +26,118 @@ NORMALIZED_COLUMNS = [
     "DOI",
     "Keywords",
     "URL",
+    "CadenaBusqueda",
     "ArchivoOrigen",
 ]
 
 SUPPORTED_EXTENSIONS = [".bib", ".txt", ".csv", ".xls", ".xlsx"]
 
 
+def clean_doi(doi):
+    """Limpia y normaliza identificadores DOI eliminando prefijos URL comunes."""
+    if not doi:
+        return ""
+    doi_str = str(doi).strip()
+    doi_str = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", doi_str, flags=re.IGNORECASE)
+    return doi_str.strip()
+
+
+def _get_val(row, candidate_keys, default=""):
+    """Obtiene el primer valor no nulo ni vacío de una lista de claves candidatas en una fila."""
+    for key in candidate_keys:
+        if key in row:
+            val = row[key]
+            if pd.notna(val):
+                s = str(val).strip()
+                if s and s.lower() != "nan":
+                    return s
+    return default
+
+
+def clean_str(val):
+    """Convierte valores a cadena limpia eliminando nulos o representaciones 'nan'."""
+    if pd.isna(val):
+        return ""
+    s = str(val).strip()
+    if s.lower() == "nan":
+        return ""
+    return s
+
+
 def normalize_row(row, fuente):
     return {
-        "Fuente": fuente,
-        "Año": row.get("Año", ""),
-        "Autor": row.get("Autor", ""),
-        "Titulo": row.get("Titulo", ""),
-        "Abstract": row.get("Abstract", ""),
-        "Titulo ES": row.get("Titulo ES", ""),
-        "Abstract ES": row.get("Abstract ES", ""),
-        "TipoDocumento": row.get("TipoDocumento", ""),
-        "DOI": row.get("DOI", ""),
-        "Keywords": row.get("Keywords", ""),
-        "URL": row.get("URL", ""),
-        "ArchivoOrigen": row.get("ArchivoOrigen", ""),
+        "Fuente": clean_str(fuente),
+        "Año": clean_str(row.get("Año", "")),
+        "Autor": clean_str(row.get("Autor", "")),
+        "Titulo": clean_str(row.get("Titulo", "")),
+        "Abstract": clean_str(row.get("Abstract", "")),
+        "Titulo ES": clean_str(row.get("Titulo ES", "")),
+        "Abstract ES": clean_str(row.get("Abstract ES", "")),
+        "TipoDocumento": clean_str(row.get("TipoDocumento", "")),
+        "DOI": clean_doi(row.get("DOI", "")),
+        "Keywords": clean_str(row.get("Keywords", "")),
+        "URL": clean_str(row.get("URL", "")),
+        "CadenaBusqueda": clean_str(row.get("CadenaBusqueda", "")),
+        "ArchivoOrigen": clean_str(row.get("ArchivoOrigen", "")),
     }
 
 
-def process_bib(filepath, fuente):
+def process_bib(filepath, fuente, cadena_busqueda=""):
     rows = []
 
-    with open(filepath, "r", encoding="utf-8") as bibtex_file:
-        bib_database = bibtexparser.load(bibtex_file)
+    with open(filepath, "r", encoding="utf-8", errors="replace") as bibtex_file:
+        raw_content = bibtex_file.read()
+
+    # Scopus y otras fuentes a veces generan claves de citación con espacios
+    # (ej. @CONFERENCE{Novoa Munoz2022,). bibtexparser las descarta si tienen espacios.
+    def fix_citation_key(match):
+        entry_type = match.group(1)
+        key = match.group(2).strip()
+        clean_key = re.sub(r"\s+", "_", key)
+        return f"@{entry_type}{{{clean_key},"
+
+    fixed_raw = re.sub(r"@([A-Za-z]+)\s*\{\s*([^,]+?),", fix_citation_key, raw_content)
+    bib_database = bibtexparser.loads(fixed_raw)
 
     for entry in bib_database.entries:
         entry_type = entry.get("ENTRYTYPE", "").lower()
         tipo_documento = {
             "article": "Artículo",
             "inproceedings": "Conferencia",
+            "conference": "Conferencia",
             "proceedings": "Proceedings",
             "book": "Libro",
             "inbook": "Capítulo",
-        }.get(entry_type, entry_type)
+            "incollection": "Capítulo",
+            "conference review": "Revisión de Conferencia",
+            "short survey": "Revisión",
+            "review": "Revisión",
+        }.get(entry_type, entry.get("type", entry_type))
+
+        author = entry.get("author", "").strip()
+        if not author:
+            author = entry.get("editor", "").strip()
+        if not author:
+            author = entry.get("publisher", "").strip()
+
+        keywords = entry.get("keywords", "").strip()
+        author_keywords = entry.get("author_keywords", "").strip()
+        all_keywords = (
+            f"{keywords}; {author_keywords}".strip("; ")
+            if (keywords and author_keywords)
+            else (keywords or author_keywords)
+        )
 
         row = {
             "Titulo": entry.get("title", ""),
-            "Autor": entry.get("author", ""),
+            "Autor": author,
             "Año": entry.get("year", ""),
             "Abstract": entry.get("abstract", ""),
             "TipoDocumento": tipo_documento,
             "DOI": entry.get("doi", ""),
-            "Keywords": entry.get("keywords", ""),
+            "Keywords": all_keywords,
             "URL": entry.get("url", ""),
+            "CadenaBusqueda": cadena_busqueda,
             "ArchivoOrigen": Path(filepath).name,
         }
         rows.append(normalize_row(row, fuente))
@@ -79,7 +145,7 @@ def process_bib(filepath, fuente):
     return rows
 
 
-def process_csv(filepath, fuente):
+def process_csv(filepath, fuente, cadena_busqueda=""):
     rows = []
     try:
         df = pd.read_csv(filepath)
@@ -88,14 +154,15 @@ def process_csv(filepath, fuente):
 
     for _, r in df.iterrows():
         row = {
-            "Titulo": r.get("Item Title", r.get("Title", "")),
-            "Autor": r.get("Authors", r.get("Author", "")),
-            "Año": r.get("Publication Year", r.get("Year", "")),
-            "Abstract": r.get("Abstract", ""),
-            "TipoDocumento": r.get("Content Type", r.get("Document Type", "")),
-            "DOI": r.get("Item DOI", r.get("DOI", "")),
-            "Keywords": r.get("Author Keywords", r.get("Keywords", "")),
-            "URL": r.get("URL", ""),
+            "Titulo": _get_val(r, ["Document Title", "Item Title", "Article Title", "Title", "Paper Title"]),
+            "Autor": _get_val(r, ["Authors", "Author", "Author full names", "Editors", "Editor", "Author(s)"]),
+            "Año": _get_val(r, ["Publication Year", "Year", "Published Year", "Date"]),
+            "Abstract": _get_val(r, ["Abstract", "Description", "Abstract Note"]),
+            "TipoDocumento": _get_val(r, ["Content Type", "Document Type", "Type", "Publication Type"]),
+            "DOI": _get_val(r, ["Item DOI", "DOI", "Digital Object Identifier"]),
+            "Keywords": _get_val(r, ["Author Keywords", "Keywords", "Index Keywords", "IEEE Terms", "Author Keywords/Keywords", "Mesh_Terms"]),
+            "URL": _get_val(r, ["URL", "PDF Link", "Link", "Document Identifier", "Source URL"]),
+            "CadenaBusqueda": cadena_busqueda,
             "ArchivoOrigen": Path(filepath).name,
         }
         rows.append(normalize_row(row, fuente))
@@ -137,20 +204,21 @@ def read_irregular_springer_csv(filepath):
     return pd.DataFrame(records)
 
 
-def process_excel(filepath, fuente):
+def process_excel(filepath, fuente, cadena_busqueda=""):
     rows = []
     df = pd.read_excel(filepath)
 
     for _, r in df.iterrows():
         row = {
-            "Titulo": r.get("Article Title", r.get("Title", "")),
-            "Autor": r.get("Authors", r.get("Author", "")),
-            "Año": r.get("Publication Year", r.get("Year", "")),
-            "Abstract": r.get("Abstract", ""),
-            "TipoDocumento": r.get("Document Type", r.get("Content Type", "")),
-            "DOI": r.get("DOI", r.get("Item DOI", "")),
-            "Keywords": r.get("Author Keywords", r.get("Keywords", "")),
-            "URL": r.get("URL", ""),
+            "Titulo": _get_val(r, ["Article Title", "Document Title", "Item Title", "Title", "Paper Title"]),
+            "Autor": _get_val(r, ["Authors", "Author", "Author full names", "Editors", "Editor", "Author(s)"]),
+            "Año": _get_val(r, ["Publication Year", "Year", "Published Year", "Date"]),
+            "Abstract": _get_val(r, ["Abstract", "Description", "Abstract Note"]),
+            "TipoDocumento": _get_val(r, ["Document Type", "Content Type", "Type", "Publication Type"]),
+            "DOI": _get_val(r, ["DOI", "Item DOI", "Digital Object Identifier"]),
+            "Keywords": _get_val(r, ["Author Keywords", "Keywords", "Index Keywords", "Author Keywords/Keywords"]),
+            "URL": _get_val(r, ["URL", "Link", "PDF Link", "Document Identifier", "Source URL"]),
+            "CadenaBusqueda": cadena_busqueda,
             "ArchivoOrigen": Path(filepath).name,
         }
         rows.append(normalize_row(row, fuente))
@@ -158,17 +226,22 @@ def process_excel(filepath, fuente):
     return rows
 
 
-def process_file(filepath, fuente=None):
+def process_file(filepath, fuente=None, cadena_busqueda=None, search_queries=None):
     filepath = Path(filepath)
     extension = filepath.suffix.lower()
     fuente = fuente or filepath.parent.name
 
+    if cadena_busqueda is None:
+        if search_queries is None:
+            search_queries = load_search_queries()
+        cadena_busqueda = search_queries.get(fuente, search_queries.get(filepath.name, ""))
+
     if extension in [".bib", ".txt"]:
-        return process_bib(filepath, fuente)
+        return process_bib(filepath, fuente, cadena_busqueda=cadena_busqueda)
     if extension == ".csv":
-        return process_csv(filepath, fuente)
+        return process_csv(filepath, fuente, cadena_busqueda=cadena_busqueda)
     if extension in [".xls", ".xlsx"]:
-        return process_excel(filepath, fuente)
+        return process_excel(filepath, fuente, cadena_busqueda=cadena_busqueda)
 
     return []
 
@@ -177,13 +250,20 @@ def process_folder(input_folder=INPUT_FOLDER):
     input_folder = Path(input_folder)
     all_rows = []
     errors = []
+    search_queries = load_search_queries()
 
     for filepath in sorted(input_folder.rglob("*")):
         if not filepath.is_file() or filepath.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
         try:
-            all_rows.extend(process_file(filepath, filepath.parent.name))
+            all_rows.extend(
+                process_file(
+                    filepath,
+                    filepath.parent.name,
+                    search_queries=search_queries,
+                )
+            )
         except Exception as exc:
             errors.append(
                 {
@@ -202,7 +282,8 @@ def build_master_dataframe(rows):
     if df.empty:
         return df
 
-    doi = df["DOI"].fillna("").astype(str).str.strip()
+    df["DOI"] = df["DOI"].fillna("").astype(str).map(clean_doi)
+    doi = df["DOI"].str.strip()
     with_doi = df[doi != ""].drop_duplicates(subset=["DOI"], keep="first")
     without_doi = df[doi == ""].drop_duplicates(
         subset=["Titulo", "Autor", "Año"], keep="first"

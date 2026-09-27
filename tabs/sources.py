@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from services.bibliographic import INPUT_FOLDER, SUPPORTED_EXTENSIONS
+from services.config import load_search_queries, save_search_queries
 
 
 SOURCES = ["ACM", "IEEE", "ScienceDirect", "Springer", "Scopus", "WebOfScience"]
@@ -93,18 +94,43 @@ def sources_tab():
         if new_source.strip():
             source = new_source.strip().replace("/", "-")
 
+        queries = load_search_queries()
+        current_query = queries.get(source, "")
+
+        search_query_val = st.text_area(
+            "Cadena de búsqueda utilizada",
+            value=current_query,
+            placeholder='Ej. TITLE-ABS-KEY("collaborative learning" AND "multimodal")',
+            help="Pega aquí la consulta o sintaxis de búsqueda utilizada en esta base de datos.",
+            height=100,
+            key=f"search_query_{source}",
+        )
+
         uploaded_files = st.file_uploader(
             "Documentos bibliográficos",
             type=[extension.replace(".", "") for extension in SUPPORTED_EXTENSIONS],
             accept_multiple_files=True,
         )
 
-        if st.button("Guardar en data", type="primary", use_container_width=True):
-            if not uploaded_files:
-                st.warning("Selecciona al menos un archivo.")
-            else:
-                saved = save_uploaded_files(source, uploaded_files)
-                st.success(f"Se guardaron {len(saved)} archivo(s) en data/{source}.")
+        col_save_data, col_save_query = st.columns([1, 1])
+        with col_save_data:
+            if st.button("Guardar en data", type="primary", use_container_width=True):
+                if not uploaded_files:
+                    st.warning("Selecciona al menos un archivo.")
+                else:
+                    saved = save_uploaded_files(source, uploaded_files)
+                    if search_query_val.strip():
+                        queries[source] = search_query_val.strip()
+                        save_search_queries(queries)
+                    st.success(f"Se guardaron {len(saved)} archivo(s) en data/{source}.")
+                    st.rerun()
+
+        with col_save_query:
+            if st.button("💾 Guardar solo cadena", use_container_width=True):
+                queries[source] = search_query_val.strip()
+                save_search_queries(queries)
+                st.success(f"Cadena de búsqueda actualizada para {source}.")
+                st.rerun()
 
         with st.expander("Borrar contenido de fuente"):
             files_in_source = [path for path in (INPUT_FOLDER / source).rglob("*") if path.is_file()]
@@ -120,5 +146,17 @@ def sources_tab():
                 st.rerun()
 
     with col_right:
+        st.markdown("##### Archivos disponibles por fuente")
         files_df = list_source_files()
         st.dataframe(files_df, use_container_width=True, hide_index=True)
+
+        st.markdown("##### Cadenas de búsqueda registradas por fuente")
+        queries = load_search_queries()
+        if queries:
+            queries_rows = [{"Fuente": k, "Cadena de búsqueda": v} for k, v in queries.items() if v.strip()]
+            if queries_rows:
+                st.dataframe(pd.DataFrame(queries_rows), use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay cadenas registradas con contenido aún.")
+        else:
+            st.info("No hay cadenas registradas aún. Ingresa la consulta a la izquierda y pulsa 'Guardar solo cadena'.")

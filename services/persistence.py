@@ -95,4 +95,9 @@ def load_master_dataframe(path=OUTPUT_FOLDER / MASTER_FILENAME, normalized_colum
         extra_cols = [col for col in existing_cols if col not in normalized_columns]
         return df[ordered_base_cols + extra_cols]
 
+    if "CadenaBusqueda" not in df.columns and "Fuente" in df.columns:
+        from services.config import load_search_queries
+        search_queries = load_search_queries()
+        df["CadenaBusqueda"] = df["Fuente"].map(lambda f: search_queries.get(str(f), ""))
+
     return df

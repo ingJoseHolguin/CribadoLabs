@@ -7,6 +7,7 @@ CONFIG_FOLDER = Path("config")
 CRITERIA_FILE = CONFIG_FOLDER / "criteria.json"
 KEYWORDS_FILE = CONFIG_FOLDER / "keywords.json"
 LLM_CONFIG_FILE = CONFIG_FOLDER / "llm_config.json"
+SEARCH_QUERIES_FILE = CONFIG_FOLDER / "search_queries.json"
 
 
 def load_criteria():
@@ -77,3 +78,25 @@ def save_llm_config(endpoint, model):
     CONFIG_FOLDER.mkdir(exist_ok=True)
     with open(LLM_CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump({"endpoint": endpoint, "model": model}, f, indent=2)
+
+
+def load_search_queries():
+    """Carga el diccionario de cadenas de búsqueda por fuente o archivo."""
+    if not SEARCH_QUERIES_FILE.exists():
+        return {}
+    try:
+        with open(SEARCH_QUERIES_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return {str(k): str(v) for k, v in data.items()}
+            return {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_search_queries(queries):
+    """Guarda el diccionario de cadenas de búsqueda por fuente o archivo."""
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    with open(SEARCH_QUERIES_FILE, "w", encoding="utf-8") as f:
+        json.dump(queries, f, indent=2, ensure_ascii=False)
+

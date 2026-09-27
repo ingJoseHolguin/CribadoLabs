@@ -86,6 +86,7 @@ def processing_tab():
         column_config={
             "Abstract": st.column_config.TextColumn("Abstract", width="large"),
             "URL": st.column_config.LinkColumn("URL"),
+            "CadenaBusqueda": st.column_config.TextColumn("Cadena de Búsqueda", width="medium"),
         },
     )
     update_total_score(edited_df)
