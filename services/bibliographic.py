@@ -23,6 +23,7 @@ NORMALIZED_COLUMNS = [
     "Titulo ES",
     "Abstract ES",
     "TipoDocumento",
+    "Revista",
     "DOI",
     "Keywords",
     "URL",
@@ -74,6 +75,7 @@ def normalize_row(row, fuente):
         "Titulo ES": clean_str(row.get("Titulo ES", "")),
         "Abstract ES": clean_str(row.get("Abstract ES", "")),
         "TipoDocumento": clean_str(row.get("TipoDocumento", "")),
+        "Revista": clean_str(row.get("Revista", "")),
         "DOI": clean_doi(row.get("DOI", "")),
         "Keywords": clean_str(row.get("Keywords", "")),
         "URL": clean_str(row.get("URL", "")),
@@ -128,12 +130,19 @@ def process_bib(filepath, fuente, cadena_busqueda=""):
             else (keywords or author_keywords)
         )
 
+        revista = (
+            entry.get("journal", "")
+            or entry.get("booktitle", "")
+            or entry.get("series", "")
+        ).strip()
+
         row = {
             "Titulo": entry.get("title", ""),
             "Autor": author,
             "Año": entry.get("year", ""),
             "Abstract": entry.get("abstract", ""),
             "TipoDocumento": tipo_documento,
+            "Revista": revista,
             "DOI": entry.get("doi", ""),
             "Keywords": all_keywords,
             "URL": entry.get("url", ""),
@@ -145,13 +154,75 @@ def process_bib(filepath, fuente, cadena_busqueda=""):
     return rows
 
 
-def process_csv(filepath, fuente, cadena_busqueda=""):
+def is_sciencedirect_landscape(df):
+    """Detecta si un DataFrame corresponde a una tabla comparativa de ScienceDirect Topic Landscape."""
+    cols = set(df.columns)
+    return {"Source", "Abstract"}.issubset(cols) and bool(
+        {"PII", "EID", "Methods", "Results", "Conclusions"} & cols
+    )
+
+
+def process_sciencedirect_landscape(df, filepath, fuente, cadena_busqueda=""):
+    """Procesa una tabla comparativa exportada desde ScienceDirect Topic Landscape."""
     rows = []
+    for _, r in df.iterrows():
+        pub_date = str(r.get("Publication Date", "")).strip()
+        year_match = re.search(r"\b(19\d\d|20\d\d)\b", pub_date)
+        anio = year_match.group(1) if year_match else (pub_date if pub_date.lower() != "nan" else "")
+
+        doi_raw = str(r.get("DOI", "")).strip()
+        if doi_raw.lower() == "nan":
+            doi_raw = ""
+        clean_d = clean_doi(doi_raw)
+        url = doi_raw if doi_raw.startswith("http") else (f"https://doi.org/{clean_d}" if clean_d else "")
+
+        abstract_base = str(r.get("Abstract", "")).strip()
+        if abstract_base.lower() == "nan":
+            abstract_base = ""
+
+        extra_parts = []
+        for field, label in [("Methods", "Métodos"), ("Results", "Resultados"), ("Conclusions", "Conclusiones")]:
+            val = str(r.get(field, "")).strip()
+            if val and val.lower() != "nan":
+                extra_parts.append(f"[{label}]: {val}")
+
+        if extra_parts:
+            full_abstract = (abstract_base + "\n\n" + "\n\n".join(extra_parts)).strip() if abstract_base else "\n\n".join(extra_parts)
+        else:
+            full_abstract = abstract_base
+
+        titulo = str(r.get("Source", "")).strip()
+        if titulo.lower() == "nan":
+            titulo = ""
+
+        row = {
+            "Titulo": titulo,
+            "Autor": "",
+            "Año": anio,
+            "Abstract": full_abstract,
+            "TipoDocumento": "Article",
+            "Revista": "",
+            "DOI": doi_raw,
+            "Keywords": "",
+            "URL": url,
+            "CadenaBusqueda": cadena_busqueda,
+            "ArchivoOrigen": Path(filepath).name,
+        }
+        rows.append(normalize_row(row, fuente))
+
+    return rows
+
+
+def process_csv(filepath, fuente, cadena_busqueda=""):
     try:
         df = pd.read_csv(filepath)
     except pd.errors.ParserError:
         df = read_irregular_springer_csv(filepath)
 
+    if is_sciencedirect_landscape(df):
+        return process_sciencedirect_landscape(df, filepath, fuente, cadena_busqueda=cadena_busqueda)
+
+    rows = []
     for _, r in df.iterrows():
         row = {
             "Titulo": _get_val(r, ["Document Title", "Item Title", "Article Title", "Title", "Paper Title"]),
@@ -159,6 +230,7 @@ def process_csv(filepath, fuente, cadena_busqueda=""):
             "Año": _get_val(r, ["Publication Year", "Year", "Published Year", "Date"]),
             "Abstract": _get_val(r, ["Abstract", "Description", "Abstract Note"]),
             "TipoDocumento": _get_val(r, ["Content Type", "Document Type", "Type", "Publication Type"]),
+            "Revista": _get_val(r, ["Publication Title", "Journal Title", "Source title", "Book Series Title", "Journal", "Publication"]),
             "DOI": _get_val(r, ["Item DOI", "DOI", "Digital Object Identifier"]),
             "Keywords": _get_val(r, ["Author Keywords", "Keywords", "Index Keywords", "IEEE Terms", "Author Keywords/Keywords", "Mesh_Terms"]),
             "URL": _get_val(r, ["URL", "PDF Link", "Link", "Document Identifier", "Source URL"]),
@@ -198,6 +270,7 @@ def read_irregular_springer_csv(filepath):
                 "Publication Year": parts[doi_index + 2],
                 "URL": parts[doi_index + 3],
                 "Content Type": parts[doi_index + 4].strip(";"),
+                "Publication Title": parts[title_end] if len(parts) > title_end else "",
             }
         )
 
@@ -215,6 +288,7 @@ def process_excel(filepath, fuente, cadena_busqueda=""):
             "Año": _get_val(r, ["Publication Year", "Year", "Published Year", "Date"]),
             "Abstract": _get_val(r, ["Abstract", "Description", "Abstract Note"]),
             "TipoDocumento": _get_val(r, ["Document Type", "Content Type", "Type", "Publication Type"]),
+            "Revista": _get_val(r, ["Publication Title", "Journal Title", "Source title", "Book Series Title", "Journal", "Publication"]),
             "DOI": _get_val(r, ["DOI", "Item DOI", "Digital Object Identifier"]),
             "Keywords": _get_val(r, ["Author Keywords", "Keywords", "Index Keywords", "Author Keywords/Keywords"]),
             "URL": _get_val(r, ["URL", "Link", "PDF Link", "Document Identifier", "Source URL"]),
@@ -234,7 +308,12 @@ def process_file(filepath, fuente=None, cadena_busqueda=None, search_queries=Non
     if cadena_busqueda is None:
         if search_queries is None:
             search_queries = load_search_queries()
-        cadena_busqueda = search_queries.get(fuente, search_queries.get(filepath.name, ""))
+        file_key = f"{fuente}/{filepath.name}"
+        cadena_busqueda = (
+            search_queries.get(file_key)
+            or search_queries.get(filepath.name)
+            or search_queries.get(fuente, "")
+        )
 
     if extension in [".bib", ".txt"]:
         return process_bib(filepath, fuente, cadena_busqueda=cadena_busqueda)
@@ -283,9 +362,18 @@ def build_master_dataframe(rows):
         return df
 
     df["DOI"] = df["DOI"].fillna("").astype(str).map(clean_doi)
-    doi = df["DOI"].str.strip()
-    with_doi = df[doi != ""].drop_duplicates(subset=["DOI"], keep="first")
-    without_doi = df[doi == ""].drop_duplicates(
+    has_doi = df["DOI"].str.strip() != ""
+    has_author = df["Autor"].fillna("").astype(str).str.strip() != ""
+
+    # Priorizar registros con autor antes de deduplicar por DOI
+    df_with_doi = df[has_doi].assign(_has_author=has_author[has_doi]).sort_values(
+        by="_has_author", ascending=False, kind="stable"
+    )
+    with_doi = (
+        df_with_doi.drop_duplicates(subset=["DOI"], keep="first")
+        .drop(columns=["_has_author"])
+    )
+    without_doi = df[~has_doi].drop_duplicates(
         subset=["Titulo", "Autor", "Año"], keep="first"
     )
     df = pd.concat([with_doi, without_doi], ignore_index=True)

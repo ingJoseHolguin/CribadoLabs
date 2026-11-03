@@ -1,0 +1,2024 @@
+1
+00:00:00,100 --> 00:00:06,862
+# Análisis del compendio de artículos: "Calidad de la colaboración en entornos colocalizados
+
+2
+00:00:06,812 --> 00:00:17,762
+*Documento de trabajo para tu revisión de literatura (objeto: Trabajo Colaborativo Asistido por Computadora, CSCW/CSCL)
+
+3
+00:00:17,762 --> 00:00:42,787
+Este documento resume los 24 documentos contenidos en tu PDF (`megamacho de articuls t raucidos_compressed.pdf`, 382 páginas, artículos traducidos automáticamente al español), explica **cómo está compuesto cada artículo y qué hace cada sección**, e indica **cuáles responden a cada una de tus preguntas de investigación (PI1–PI5)**.
+
+4
+00:00:42,787 --> 00:00:45,212
+## 0.
+
+5
+00:00:45,212 --> 00:00:49,462
+Antes de empezar: la "anatomía" típica de un artículo
+
+6
+00:00:49,462 --> 00:00:56,987
+Casi todos los artículos de tu compendio siguen la estructura IMRyD (Introducción–Método–Resultados–Discusión).
+
+7
+00:00:56,987 --> 00:01:01,775
+Saber qué hace cada sección te permitirá leer cualquiera de ellos rápido:
+
+8
+00:01:01,775 --> 00:01:03,762
+Sección | ¿Qué hace?
+
+9
+00:01:03,762 --> 00:01:05,587
+Para qué te sirve?
+
+10
+00:01:05,587 --> 00:01:13,462
+*Resumen (Abstract)** | Condensa problema, método, datos y hallazgo principal en ~200 palabras.
+
+11
+00:01:13,462 --> 00:01:17,075
+Para decidir si el artículo te sirve (triage).
+
+12
+00:01:17,075 --> 00:01:32,425
+*Palabras clave / Conceptos CCS** | Términos con los que la comunidad indexa el trabajo (en ACM, los "CCS concepts" clasifican el área: *Computer-supported cooperative work*, *Collaborative and social computing*, etc.).
+
+13
+00:01:32,425 --> 00:01:37,637
+*Oro puro para tu PI3** (terminología de cada comunidad).
+
+14
+00:01:37,637 --> 00:01:39,550
+*1.
+
+15
+00:01:39,550 --> 00:01:47,487
+Introducción** | Plantea el problema, la motivación, el vacío (gap) y las preguntas de investigación (RQ).
+
+16
+00:01:47,487 --> 00:01:54,762
+Aquí encontrarás cómo los autores *justifican* el constructo (PI1) y el vacío que atacan (PI5).
+
+17
+00:01:54,762 --> 00:01:56,712
+*2.
+
+18
+00:01:56,712 --> 00:02:04,337
+Trabajos relacionados / Antecedentes** | Revisa literatura y posiciona el artículo frente a constructos vecinos.
+
+19
+00:02:04,337 --> 00:02:10,725
+*Clave para PI1 y PI3**: qué términos y marcos usa cada comunidad.
+
+20
+00:02:10,725 --> 00:02:12,725
+*3.
+
+21
+00:02:12,725 --> 00:02:26,512
+Métodos / Configuración del estudio** | Contexto, participantes, tarea, sensores o instrumentos, procedimiento, técnicas de análisis (ML, estadística, codificación cualitativa).
+
+22
+00:02:26,512 --> 00:02:34,125
+*Clave para PI2 y PI4**: métricas, modalidades, grado de automatización, diseños.
+
+23
+00:02:34,125 --> 00:02:36,962
+*4/5.
+
+24
+00:02:36,962 --> 00:02:42,450
+Resultados** | Presenta hallazgos por RQ (tablas, figuras, modelos).
+
+25
+00:02:42,450 --> 00:02:45,975
+Evidencia concreta de medición (PI2).
+
+26
+00:02:45,975 --> 00:02:48,025
+*6.
+
+27
+00:02:48,025 --> 00:02:53,250
+Discusión** | Interpreta los resultados, los conecta con la teoría y la práctica.
+
+28
+00:02:53,250 --> 00:02:56,525
+Conceptualización refinada (PI1).
+
+29
+00:02:56,525 --> 00:03:02,612
+*Limitaciones / Trabajo futuro** | Lo que el estudio no pudo hacer y lo que sigue.
+
+30
+00:03:02,612 --> 00:03:05,900
+*Respuesta directa a tu PI5**.
+
+31
+00:03:05,900 --> 00:03:09,762
+*Conclusión** | Cierre breve con la contribución.
+
+32
+00:03:09,762 --> 00:03:11,875
+Resumen citable.
+
+33
+00:03:11,875 --> 00:03:14,800
+*Referencias** | Bibliografía.
+
+34
+00:03:14,800 --> 00:03:19,600
+Para hacer "snowballing" (seguir la red de citas) en tu revisión.
+
+35
+00:03:19,600 --> 00:03:34,162
+*Nota sobre el PDF**: los artículos están en el orden en que se listan más abajo; varios son **fragmentos** (solo algunas páginas) y uno está **duplicado** (dos traducciones distintas del mismo manuscrito).
+
+36
+00:03:34,162 --> 00:03:38,462
+Al final (sección 6) detallo estas anomalías.
+
+37
+00:03:38,462 --> 00:03:40,875
+## 1.
+
+38
+00:03:40,875 --> 00:03:43,662
+Inventario general del corpus
+
+39
+00:03:43,662 --> 00:03:51,637
+# | Artículo (título traducido) | Autores principales | Año / Venue | pp. PDF | ¿Colocalizado?
+
+40
+00:03:51,637 --> 00:04:03,575
+A1 | Un marco multimodal de preguntas y respuestas en vídeo de aula para la comprensión automatizada del aprendizaje colaborativo | Sivakumaran, Hmelo-Silver, Lester, Bansal, Rowe et al.
+
+41
+00:04:03,575 --> 00:04:10,387
+2025, ICMI (ACM) | 1–10 | ✔ aula escolar
+
+42
+00:04:10,387 --> 00:04:30,225
+A2 | Aprovechar la analítica de aprendizaje transparente para el apoyo individualizado mediante detección automática de la participación en el aprendizaje colaborativo cara a cara | Zhou, Suraworachet, Cukurova (UCL) | 2024, LAK (ACM) | 11–22 | ✔
+
+43
+00:04:30,225 --> 00:04:37,675
+A3 | ¿Hasta qué punto se generalizan los modelos de estimación de la calidad de la colaboración en contextos escolares reales?
+
+44
+00:04:37,675 --> 00:04:49,562
+Chejara, Kasepalu, Prieto, Rodríguez-Triana, Ruiz-Calleja, Schneider | 2024, BJET (Wiley) | 23–45 | ✔
+
+45
+00:04:49,562 --> 00:05:11,150
+A4 | Marco analítico de alfabetización colaborativa (CLAF): perspectivas de los estudiantes sobre indicadores de calidad de la colaboración y uso de la retroalimentación | Eze, Zurbuchen, Anderson, Worsley (Northwestern) | 2026, IJCSCL (Springer) | 46–89 | ✔ (mediado por herramienta)
+
+46
+00:05:11,308 --> 00:05:25,208
+A5 | ConAn: una herramienta útil para el análisis de conversaciones multimodales | Müller, Bühler, Penzkofer, Mayer, Bulling | 2021, ICMI (ACM) | 90–100 | ✔
+
+47
+00:05:25,158 --> 00:05:46,845
+A6 | Detección de comportamientos no verbales del habla y la mirada con datos multimodales y visión artificial para interpretar interacciones de aprendizaje colaborativo eficaces | Zhou, Suraworachet, Cukurova (UCL) | 2024, Education and Information Technologies (Springer) | 101–129 | ✔
+
+48
+00:05:46,845 --> 00:06:07,445
+A7 | Exploración de indicadores de la calidad de la colaboración y sus dimensiones en entornos de aula mediante MMLA | Chejara, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Chounta, Prieto, Schneider | 2023, EC-TEL (Springer LNCS) | 130–144 | ✔
+
+49
+00:06:07,445 --> 00:06:12,845
+A8 | ¿Cómo construir modelos más generalizables para la calidad de la colaboración?
+
+50
+00:06:12,845 --> 00:06:31,095
+Lecciones al explorar conjuntos de datos audio-registro multicontexto con MMLA | Chejara, Prieto, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Shankar | 2023, LAK (ACM) | 145–155 | ✔
+
+51
+00:06:31,095 --> 00:06:40,808
+A9 | Impacto del tamaño de ventana en la generalizabilidad de los modelos de estimación de la calidad de la colaboración desarrollados con MMLA | Chejara et al.
+
+52
+00:06:40,808 --> 00:06:48,970
+2023, LAK (ACM) | 156–162 | ✔
+
+53
+00:06:48,970 --> 00:07:08,445
+A10 | Medición de la calidad de la colaboración mediante datos de audio y analítica del aprendizaje (capítulo de libro) | Praharaj, Scheffel, Drachsler, Specht | 2023, Springer (libro Kovanović et al., cap. 6) | 163–183 | ✔
+
+54
+00:07:08,445 --> 00:07:18,070
+A11 | METS: analítica de aprendizaje multimodal del trabajo en equipo encarnado | Linxuan Zhao, Osborne, Yan, Swiecki, Gašević et al.
+
+55
+00:07:18,070 --> 00:07:26,633
+Monash) | 2023, LAK (ACM) | 183–193 | ✔
+
+56
+00:07:26,633 --> 00:07:43,720
+A12 | MR-CoCo: banco de pruebas de realidad mixta abierta para parejas colocalizadas (configuración de productos) | Medeiros, Dastan, Fiorentino, Vangi | 2025, IEEE TVCG | 194–202 | ✔
+
+57
+00:07:43,720 --> 00:08:00,220
+A13 | Papel de consorcio doctoral: estimación automática de la calidad de la colaboración en entornos presenciales (fragmento) | Pankaj Chejara | 2020, IEEE ICALT (Doctoral Consortium) | 203–205 | ✔
+
+58
+00:08:00,220 --> 00:08:21,570
+A14 | La fisicalidad como ancla para la coordinación: examinando la colaboración colocalizada en entornos físicos y de realidad aumentada móvil | Jen Liu, Phoebe Sengers (Cornell) | 2021, PACM HCI / CSCW2, art. 470 | 206–232 | ✔
+
+59
+00:08:21,570 --> 00:08:40,695
+A15 | Evaluación de aula orientada a procesos impulsada por el modelo MMLA "DFIF" (Datos-Características-Análisis-Retroalimentación) | Bin Chen, Juan Li (Wuhan, China) | 2026, CIBDA (ACM) | 233–238 | ✔
+
+60
+00:08:40,695 --> 00:08:52,633
+A16 | Cuantificación de la calidad de la colaboración en entornos de aula presenciales con MMLA (manuscrito anonimizado; **duplicado** en el PDF) | Chejara et al.
+
+61
+00:08:52,633 --> 00:09:04,445
+versión ciega; luego en CrossMMLA@LAK'21) | ~2020–21, workshop | 239–254 | ✔
+
+62
+00:09:04,445 --> 00:09:27,308
+A17 | Análisis de cuantificación de recurrencia (mdRQA) de la dinámica de la mirada durante la colaboración en equipo | Abitino, Moulder, Booth, D'Mello (Colorado Boulder) | 2023, LAK (ACM) | 255–265 | ✖ (tríadas **remotas**; contraste)
+
+63
+00:09:27,308 --> 00:09:49,120
+A18 | Analítica del habla sobre datos de audio individuales y grupales para comprender la colaboración (fragmento, 2 pp.) | Rajarathinam, D'Angelo, Mercier (Illinois) | 2022, CSCL (ISLS), p. 599 | 266–267 | ✔
+
+64
+00:09:49,120 --> 00:10:13,045
+A19 | El impacto del ruido de atributos en la automatización de la estimación de la calidad de la colaboración: analítica del aprendizaje en aulas auténticas | Chejara, Prieto, Dimitriadis, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Shankar | 2024, Journal of Learning Analytics 11(2) | 268–285 | ✔
+
+65
+00:10:13,045 --> 00:10:32,708
+A20 | Hacia la convergencia colaborativa: cuantificar la calidad de la colaboración con analítica automatizada de colaboración colocalizada | Praharaj, Scheffel, Schmitz, Specht, Drachsler | 2022, LAK (ACM) | 286–299 | ✔
+
+66
+00:10:32,708 --> 00:10:55,208
+A21 | Un esquema de calificación para evaluar la calidad de los procesos de colaboración asistida por ordenador | Anne Meier, Hans Spada, Nikol Rummel (Friburgo) | 2007, IJCSCL 2(1):63–86 | 300–323 | ✖ (díadas por **videoconferencia**; base teórica del constructo)
+
+67
+00:10:55,372 --> 00:11:15,747
+A22 | Uso de LoRA para ajustar LLMs al análisis de la argumentación colaborativa en aulas (fragmento) | Deliang Wang, Gao Wei Chen (HKU) | 2025, ACM L@S '25 | 324–328 | ✔ (aulas presenciales)
+
+68
+00:11:15,747 --> 00:11:32,659
+A23 | Uso del seguimiento ocular dual móvil para capturar ciclos de colaboración y cooperación en díadas colocalizadas (preimpresión) | Tonya Bryant, Bertrand Schneider | ~2022, preprint | 329–365 | ✔
+
+69
+00:11:32,659 --> 00:11:57,097
+A24 | Usar datos de trazas de interacción social y contexto para predecir la calidad de la colaboración y la fluidez creativa en entornos de aprendizaje de diseño colaborativo | Ninger Zhou, Kisselburgh, Badam, Chandrasegaran, Ramani (Purdue) | 2020, IJHCS 136:102378 | 366–382 | ✔
+
+70
+00:11:57,097 --> 00:11:59,534
+## 2.
+
+71
+00:11:59,534 --> 00:12:02,359
+Resúmenes artículo por artículo
+
+72
+00:12:02,359 --> 00:12:15,484
+En cada ficha: **ficha bibliográfica** → **de qué trata** → **cómo está compuesto (sección por sección)** → **qué hicieron** → **hallazgos** → **limitaciones** → **qué PI responde**.
+
+73
+00:12:15,484 --> 00:12:20,097
+### A1 (pp. 1–10).
+
+74
+00:12:20,097 --> 00:12:26,322
+A Multimodal Classroom Video Question-Answering Framework for Automated Understanding of Collaborative Learning
+
+75
+00:12:26,322 --> 00:12:28,934
+*Sivakumaran et al.
+
+76
+00:12:28,934 --> 00:12:38,509
+con C. Hmelo-Silver, J. Lester, M. Bansal, J. Rowe y otros; Indiana Univ., UNC Chapel Hill, NC State).
+
+77
+00:12:38,509 --> 00:12:44,934
+ICMI '25, Canberra, pp. 516–525.
+
+78
+00:12:44,934 --> 00:12:58,609
+DOI 10.1145/3716553.3750795.** *(El PDF empieza a mitad del resumen: falta la portada.
+
+79
+00:12:58,609 --> 00:13:00,222
+*
+
+80
+00:13:00,222 --> 00:13:10,047
+*De qué trata.** Analizar vídeo de aulas donde los estudiantes hacen resolución colaborativa de problemas (CPS) es carísimo manualmente.
+
+81
+00:13:10,047 --> 00:13:36,822
+Proponen un marco de **preguntas y respuestas sobre vídeo (VideoQA)** que, usando un LLM que **genera código Python** que llama a modelos expertos (fundamentación audiovisual tipo AVSBench, reconocimiento de voz, análisis de texto, seguimiento de mirada, detección de objetos y localización de momentos), responde automáticamente preguntas del tipo *"¿quién mostró frustración durante la actividad?
+
+82
+00:13:36,822 --> 00:13:41,497
+* sobre vídeos de clase de primaria/secundaria.
+
+83
+00:13:41,497 --> 00:14:22,722
+*Composición.** 1 Introducción (problema: las interacciones ricas —habla, mirada, gestos— requieren procesamiento manual); 2 Trabajos relacionados (VideoQA, MMLA); 3 Método (3.1 escenario ilustrativo del pipeline LLM→código→modelos expertos); 4 Conjunto de datos de evaluación (4.1 recogida de vídeos de aulas; 4.2 generación de pares pregunta–respuesta "visuales"); 5 Resultados y análisis (5.1 líneas base ViperGPT y VideoChat2; 5.2 evaluación automática semántica; 5.3 evaluación humana; 5.4
+
+84
+00:14:22,722 --> 00:14:40,759
+sistema de evaluación personalizado basado en vídeo); 6 Discusión (6.1 Limitaciones, 6.2 Trabajo futuro, 6.3 declaración de innovación segura y responsable); 7 Conclusión; Referencias; Demo (interfaz de usuario con chat + código).
+
+85
+00:14:40,759 --> 00:15:00,097
+*Qué hicieron.** Construyeron un dataset de evaluación con vídeos reales de CPS en aulas K-12 y preguntas sobre participación estudiantil; compararon su marco contra ViperGPT y VideoChat2 con métricas semánticas automáticas, evaluación humana y un evaluador automático basado en vídeo que proponen.
+
+86
+00:15:00,097 --> 00:15:13,297
+*Hallazgos.** Su marco supera significativamente a las líneas base en múltiples tipos de participación estudiantil; la generación de código hace el proceso interpretable (el usuario ve los pasos ejecutados).
+
+87
+00:15:13,297 --> 00:15:53,197
+*PI que responde.** **PI2 ✔** (automatización de alto nivel de la medición de la colaboración vía LLM+visión; grado de automatización total), **PI4 ✔** (diseño de ciencia de datos/evaluación de sistemas con vídeos de aula auténticos), **PI5 ✔** (limitaciones y trabajo futuro explícitos; ética), PI1 parcial (usan "participación/engagement" y CPS como constructos, sin profundizar teóricamente), PI3 parcial (comunidad ICMI/ACM: término *collaborative problem solving*).
+
+88
+00:15:53,197 --> 00:16:05,197
+*Relevancia CSCW.** Muestra la frontera "LLM como analista" de interacciones cara a cara: útil si tu revisión discute automatización de la observación de la colaboración.
+
+89
+00:16:05,197 --> 00:16:10,047
+### A2 (pp. 11–22).
+
+90
+00:16:10,047 --> 00:16:17,797
+Leveraging Transparent Learning Analytics for Individualised Support via Automated Detection of Face-to-Face Collaborative Learning Engagement
+
+91
+00:16:17,956 --> 00:16:24,043
+*Qi Zhou, Wannapon Suraworachet, Mutlu Cukurova (UCL Knowledge Lab).
+
+92
+00:16:23,993 --> 00:16:27,243
+LAK '24, Kioto.
+
+93
+00:16:27,243 --> 00:16:36,393
+DOI 10.1145/3636555.3636894.
+
+94
+00:16:36,393 --> 00:16:38,356
+12 páginas.
+
+95
+00:16:38,356 --> 00:16:47,893
+*De qué trata.** Los modelos "caja negra" de analítica del aprendizaje son precisos pero poco útiles para docentes porque no se entiende *por qué* predicen.
+
+96
+00:16:47,893 --> 00:17:04,106
+Proponen un enfoque **transparente y basado en reglas** para detectar automáticamente la **participación (engagement) individual** durante aprendizaje colaborativo **cara a cara**, a partir de habla y mirada, y la usan para individualizar el apoyo.
+
+97
+00:17:04,106 --> 00:17:39,631
+*Composición.** 1 Introducción (transparencia de los sistemas LA como problema; ejemplo: la distancia entre manos predice rendimiento pero "no puedes pedir a los estudiantes que acerquen las manos"); 2 Antecedentes (2.1 analítica del aprendizaje colaborativo; 2.2 transparencia de los sistemas LA); 3 Metodología (3.1 contexto educativo: módulo de posgrado de 10 semanas con grupos de 4–5 personas diversos; 3.2 recogida de datos: micrófono de conferencia sobre la mesa + cámaras; 3.3 procesamiento:
+
+98
+00:17:39,631 --> 00:18:04,281
+detección de comportamientos individuales → inferencia de estados → estimación de la participación individual; 3.3.5 comparación de tipos de participación con pruebas t); 4 Resultados (4.2 comparación con autoinformes; 4.3 comparación con el aprendizaje de los estudiantes); 5 Discusión; 6 Conclusión (+ limitaciones e investigación futura); Referencias.
+
+99
+00:18:04,281 --> 00:18:23,781
+*Qué hicieron.** Reglas interpretables combinan habla (quién habla, a quién) y mirada (a quién mira) para clasificar la participación individual; derivan una tipología de estudiantes **"conductores" (drivers) vs "pasajeros" (passengers)** y la validan contra autoinformes y resultados de aprendizaje.
+
+100
+00:18:23,781 --> 00:18:45,081
+*Hallazgos.** La participación detectada automáticamente se alinea con los autoinformes; los "conductores" reportan mayor compromiso, enfrentan menos problemas conductuales y obtienen mejores resultados de aprendizaje que los "pasajeros"; los tres códigos (habla/mirada/estado) se generan automáticamente por estudiante.
+
+101
+00:18:45,081 --> 00:18:55,031
+*Limitaciones.** Estudio exploratorio: no permite establecer causalidad entre participación y resultados (los autores piden más investigación).
+
+102
+00:18:55,031 --> 00:19:33,843
+*PI que responde.** **PI1 ✔** (engagement colaborativo individual como constructo vecino de la calidad de la colaboración; tipología drivers/passengers), **PI2 ✔** (métrica basada en reglas transparentes sobre habla+mirada; automatización total; énfasis en interpretabilidad), **PI4 ✔** (estudio de campo longitudinal, 10 semanas, posgrado), **PI5 ✔** (limitación de causalidad; generalización), PI3 parcial (comunidad LAK/ACM).
+
+103
+00:19:33,843 --> 00:19:49,493
+*Relevancia CSCW.** Es el contrapunto "caja blanca" a A1/A6: aquí la medición sacrifica sofisticación por **transparencia y valor educativo**, un dilema central del CSCW aplicado a analíticas.
+
+104
+00:19:49,493 --> 00:19:54,881
+### A3 (pp. 23–45).
+
+105
+00:19:54,881 --> 00:20:01,906
+Hasta qué punto se generalizan los modelos de estimación de la calidad de la colaboración en contextos escolares reales?
+
+106
+00:20:01,906 --> 00:20:11,193
+*Pankaj Chejara, Reet Kasepalu, Luis P. Prieto, María Jesús Rodríguez-Triana, Adolfo Ruiz-Calleja, Bertrand Schneider.
+
+107
+00:20:11,193 --> 00:20:18,806
+British Journal of Educational Technology 55:1602–1624 (2024).
+
+108
+00:20:18,806 --> 00:20:24,131
+DOI 10.1111/bjet.13402.
+
+109
+00:20:24,131 --> 00:20:41,218
+*De qué trata.** El artículo "grande" del grupo Tallin–Valladolid sobre **generalización**: si entreno un modelo de ML que estima la **calidad de la colaboración (CQ)** y sus dimensiones con datos de una escuela/actividad, ¿funciona en otra?
+
+110
+00:20:41,218 --> 00:20:57,156
+Datos de audio, vídeo y registros de **dos escuelas estonias** (una de formación profesional y una escuela general), en distintas asignaturas y tipos de actividad (**escritura colaborativa** y **debate en grupo/videoblog**).
+
+111
+00:20:57,316 --> 00:21:31,478
+*Composición.** Portada con "Qué se sabe ya / implicaciones para la práctica" (formato BJET); Introducción; Trabajos relacionados (modelado de la colaboración; ausencia de evaluación cruzada de modelos ML entre contextos); Métodos (contexto: dos tipos de escuelas en Estonia; herramienta **CoTrack** — Etherpad + captura y preprocesamiento de audio en tiempo real, p. ej. tiempo de habla y voz-a-texto; datos: audio, vídeo y registros; verdad fundamental: esquema de calificación de **Rummel et al.,
+
+112
+00:21:31,478 --> 00:22:06,191
+2011** para CQ y dimensiones subyacentes —gestión del tiempo, cooperación, argumentación, etc.—; desarrollo de modelos; diseño de evaluación cruzada entre asignaturas, actividades y escuelas); Resultados (características multimodales asociadas a CQ y sus dimensiones; el área de la región bucal como indicador de actividad de habla; comparación entre modalidades por RQ; **precisión equilibrada cae del 82% al 57% al generalizar entre escuelas**); Discusión (la multimodalidad ayuda más en debates
+
+113
+00:22:06,191 --> 00:22:22,853
+que en escritura colaborativa; el vídeo como alternativa cuando el audio es ruidoso; en escritura colaborativa los modelos rinden por debajo del azar); Limitaciones; Conclusión y trabajos futuros; Referencias; Apéndices (tablas de resultados por modalidad).
+
+114
+00:22:22,853 --> 00:22:31,166
+*PI que responde.** **PI1 ✔** (CQ operacionalizada con el esquema de Rummel et al.
+
+115
+00:22:31,166 --> 00:22:34,391
+2011, derivado de Meier et al.
+
+116
+00:22:34,391 --> 00:23:08,053
+2007 — ver A21), **PI2 ✔** (métricas de audio+vídeo+logs; ML supervisado; precisión equilibrada; automatización completa), **PI4 ✔** (estudio multicontexto en aulas auténticas de dos escuelas; actividades de escritura y debate), **PI5 ✔** (degradación al generalizar; tareas de escritura difíciles; ruido contextual), PI3 parcial (comunidad tecnología educativa/BJET).
+
+117
+00:23:08,053 --> 00:23:21,116
+*Relevancia CSCW.** Ejemplo canónico de "collocated collaboration analytics" con validación cruzada entre contextos: directamente alineado con tu PI2 (grado de automatización y robustez).
+
+118
+00:23:21,116 --> 00:23:26,466
+### A4 (pp. 46–89).
+
+119
+00:23:26,466 --> 00:23:35,366
+Collaborative Literacy Analytics Framework (CLAF): Investigating Students' Perspectives on Collaboration Quality Indicators and Feedback Utilisation
+
+120
+00:23:35,366 --> 00:23:42,728
+*Tochukwu Dominic Eze, Lucas Zurbuchen, Khalil Anderson, Marcelo Worsley (Northwestern).
+
+121
+00:23:42,728 --> 00:23:51,228
+International Journal of Computer-Supported Collaborative Learning 21:459–502 (2026).
+
+122
+00:23:51,228 --> 00:24:00,066
+DOI 10.1007/s11412-026-09475-w.
+
+123
+00:24:00,066 --> 00:24:09,016
+*De qué trata.** La MMLA ha mejorado la comprensión de la calidad de la colaboración, pero **ignora la voz del estudiante**.
+
+124
+00:24:09,016 --> 00:24:30,353
+Encuestan a **290 estudiantes universitarios** que usaron durante **12 semanas** una herramienta de analítica de la colaboración (CA) en actividades colaborativas, para saber (RQ1) qué indicadores de calidad de la colaboración valoran para la evaluación individual y grupal y (RQ2) cómo usan la retroalimentación.
+
+125
+00:24:30,353 --> 00:24:43,803
+Con ello construyen el **marco CLAF (Collaborative Literacy Analytics Framework)**, que integra métricas de evaluación, interdependencias de indicadores y mecanismos de retroalimentación (en tiempo real y posterior).
+
+126
+00:24:43,972 --> 00:24:53,209
+*Composición.** Resumen; Introducción; Revisión de literatura (convergencia conceptual entre marcos clásicos: Meier et al.
+
+127
+00:24:53,159 --> 00:25:27,697
+2007, OCDE 2017, etc. — Tabla 1; vacío: rastros multimodales sin perspectiva estudiantil); Métodos (descripción de la herramienta CA; protocolo de encuesta abierta — justifican preguntas abiertas por su riqueza; participantes y demografía; recolección; métodos de análisis de datos en 2 fases: indicadores de calidad y utilización de retroalimentación); Resultados (catálogo de indicadores valorados por estudiantes: comunicación —aspectos cuantitativos y cualitativos—, participación en debates e
+
+128
+00:25:27,697 --> 00:25:59,284
+ideas, compatibilidad y cohesión del equipo, inversión de esfuerzo y tiempo, aprendizaje y crecimiento, progreso, resultado y logro, revisión por pares; uso de retroalimentación en tiempo real como herramienta proactiva de gestión de la colaboración; equidad en la distribución de tareas); Discusión (las 3 dimensiones del CLAF: evaluación y métricas; interdependencia de indicadores; retroalimentación; implicaciones para la teoría e investigación del CSCL —regulación socialmente compartida,
+
+129
+00:25:59,284 --> 00:26:08,084
+alfabetización en retroalimentación—; aplicación del CLAF en un escenario hipotético); Limitaciones; Conclusiones; Referencias.
+
+130
+00:26:08,084 --> 00:26:27,034
+*Hallazgos.** Los estudiantes conceptualizan la calidad de la colaboración en capas de **proceso, resultado y revisión**; valoran indicadores a nivel individual y grupal; distinguen funciones complementarias de la retroalimentación en tiempo real (gestión) y posterior (aprendizaje y mejora futura).
+
+131
+00:26:27,034 --> 00:27:10,522
+*PI que responde.** **PI1 ✔✔** (es el artículo del corpus que más aporta a la conceptualización *desde la perspectiva del estudiante*: indicadores, dimensiones y su relación con alfabetización colaborativa y regulación), **PI2 ✔** (indicadores de la herramienta CA; cómo los interpretan los usuarios), **PI4 ✔** (encuesta abierta a gran escala + análisis cualitativo en 2 fases), **PI5 ✔** (limitaciones y vías futuras), PI3 ✔ (comunidad CSCL/IJCSCL; término "collaborative literacy").
+
+132
+00:27:10,522 --> 00:27:23,172
+*Relevancia CSCW.** Núcleo de tu PI1: conecta "collaboration quality" con "collaborative literacy" y feedback, y aporta evidencia de cómo los propios usuarios nombran y valoran el constructo.
+
+133
+00:27:23,172 --> 00:27:27,697
+### A5 (pp. 90–100).
+
+134
+00:27:27,697 --> 00:27:32,184
+ConAn: A Usable Tool for Multimodal Conversation Analysis
+
+135
+00:27:32,184 --> 00:27:42,859
+*Philipp Müller (DFKI), Felix Bühler (Stuttgart), Anna Penzkofer (TU München), Sven Mayer (LMU), Andreas Bulling (Stuttgart).
+
+136
+00:27:42,859 --> 00:27:45,834
+ICMI '21, Montreal.
+
+137
+00:27:45,834 --> 00:27:54,734
+DOI 10.1145/3462244.3479886.
+
+138
+00:27:54,734 --> 00:27:56,634
+11 páginas.
+
+139
+00:27:56,634 --> 00:28:08,947
+*De qué trata.** Herramienta (artículo de sistemas/demo) para explorar y analizar **automáticamente el comportamiento no verbal de grupos** en conversaciones naturales.
+
+140
+00:28:08,947 --> 00:28:26,084
+A diferencia de setups multisensor complejos, **solo requiere una cámara 360°** y usa visión por computadora de última generación para extraer dirección de mirada, expresiones faciales y actividad verbal, más seguimiento de objetos con etiquetas ID.
+
+141
+00:28:26,084 --> 00:29:02,234
+*Composición.** 1 Introducción; 2 Análisis de interacción (trabajos relacionados: mirada/contacto visual como señal conversacional); 3 Desafíos en el análisis de grupos multimodales (escalabilidad de la anotación manual); 4 Diseño de ConAn (4.1 interfaz de usuario; pipeline con objetos etiquetados y campo de contexto); 5 Modelos (imágenes faciales recortadas por sujeto y por fotograma); 6/7 Casos de uso y resultados (5.1 análisis general de una conversación de 4 participantes; evaluación de la
+
+142
+00:29:02,234 --> 00:29:11,684
+*calidad de la colaboración**; impacto de la tecnología en el comportamiento de audiencias); 7 Conclusión y trabajo futuro; Referencias.
+
+143
+00:29:11,684 --> 00:29:28,422
+*Hallazgos.** ConAn permite implantación rápida en entornos reales, visualizar comportamiento individual y dinámica grupal, y cuantificar interacciones usuario-objeto; los autores la ilustran con tres casos de uso, uno de ellos evaluación de calidad de colaboración.
+
+144
+00:29:28,588 --> 00:30:01,875
+*PI que responde.** **PI2 ✔✔** (artefacto tecnológico de medición: cámara 360°, indicadores no verbales automáticos, GUI para investigadores; automatización alta con supervisión humana), **PI4 ✔** (demostración + casos de uso), PI3 ✔ (comunidad ICMI/HCI: "conversation analysis", "group behavior"), PI5 parcial (trabajo futuro), PI1 marginal.
+
+145
+00:30:01,875 --> 00:30:11,900
+*Relevancia CSCW.** Infraestructura de medición para grupos colocalizados: cita obligada si tu PI2 discute sensores y herramientas.
+
+146
+00:30:11,900 --> 00:30:17,500
+### A6 (pp. 101–129).
+
+147
+00:30:17,500 --> 00:30:25,350
+Detecting non-verbal speech and gaze behaviours with multimodal data and computer vision to interpret effective collaborative learning interactions
+
+148
+00:30:25,350 --> 00:30:31,075
+*Qi Zhou, Wannapon Suraworachet, Mutlu Cukurova (UCL).
+
+149
+00:30:31,075 --> 00:30:38,263
+Education and Information Technologies 29:1071–1098 (2024).
+
+150
+00:30:38,263 --> 00:30:46,613
+DOI 10.1007/s10639-023-12315-1.
+
+151
+00:30:46,613 --> 00:31:12,488
+*De qué trata.** Del mismo contexto que A2 (módulo de posgrado de 10 semanas, sesiones grupales semanales de ~60 min): un método original para **identificar interacciones grupales no verbales** (habla + mirada) en aprendizaje colaborativo real, y estudiar cómo varían entre grupos con distintos niveles de **comprensión compartida** (shared understanding), usando además **minería de procesos**.
+
+152
+00:31:12,488 --> 00:31:49,563
+*Composición.** Resumen; 1 Introducción; 2 Antecedentes (2.1 interacciones no verbales del aprendizaje colaborativo; 2.2 análisis de procesos de interacciones); 3 Contexto (3.1 contexto educativo —curso de posgrado interdisciplinar con 34 estudiantes—; 3.2 recogida de datos —audio y vídeo de las sesiones semanales—; 3.3 evaluación de los resultados del aprendizaje colaborativo); 4 Metodología (4.1.1 diarización de hablantes del audio; detección de mirada con visión artificial; mapeo datos→
+
+153
+00:31:49,563 --> 00:32:22,588
+constructos; reglas para inferir **estados de interacción grupal** a partir de mirada y habla —p. ej. referencia (referencing) y seguimiento (following), interacción con tutor (OT), no colaboración—; 5 Resultados (distribución de estados; pruebas U de Mann-Whitney entre grupos de alto/bajo shared understanding; tiempos y duración máxima de referencing/following; grafos de minería de procesos por grupo); 6 Discusión (patrones de interacción distintos según resultados; orden de las interacciones;
+
+154
+00:32:22,588 --> 00:32:29,013
+grupos con alta comprensión compartida tienden a ciertos patrones); Conclusión; Referencias.
+
+155
+00:32:29,013 --> 00:32:50,988
+*Hallazgos.** Los grupos con distintos niveles de comprensión compartida difieren significativamente en el tiempo dedicado y la duración máxima de los comportamientos de **referencia y seguimiento**; la minería de procesos revela patrones de interacción diferentes; en grupos con mejores resultados hay relación entre referencing/following y gestión de recursos.
+
+156
+00:32:50,988 --> 00:32:57,063
+Estas conductas no verbales son detectables automáticamente (visión artificial + audio).
+
+157
+00:32:57,063 --> 00:33:32,838
+*PI que responde.** **PI1 ✔** (shared understanding y estados de interacción grupal como constructos relacionados), **PI2 ✔✔** (pipeline completo: diarización, gaze, reglas de estado, minería de procesos; automatización alta), **PI4 ✔** (estudio de campo longitudinal en posgrado), **PI5 ✔** (validez transcontextual pendiente; potencial como sistema de apoyo en tiempo real), PI3 parcial.
+
+158
+00:33:32,838 --> 00:33:46,688
+*Relevancia CSCW.** Modelo de cómo pasar de sensores crudos a "estados de colaboración" grupales interpretables y a análisis de secuencias (process mining), muy citado en MMLA colocalizada.
+
+159
+00:33:46,688 --> 00:33:52,575
+### A7 (pp. 130–144).
+
+160
+00:33:52,575 --> 00:33:59,713
+Exploring Indicators for Collaboration Quality and Its Dimensions in Classroom Settings Using Multimodal Learning Analytics
+
+161
+00:33:59,713 --> 00:34:07,113
+*Chejara, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Chounta, Prieto, Schneider.
+
+162
+00:34:07,113 --> 00:34:11,338
+EC-TEL 2023 (Springer LNCS).
+
+163
+00:34:11,338 --> 00:34:21,250
+DOI 10.1007/978-3-031-42682-7_5.
+
+164
+00:34:21,250 --> 00:34:46,675
+*De qué trata.** Explora **qué indicadores multimodales** (incluyendo datos de vídeo poco usados) se asocian con la calidad de la colaboración **y sus dimensiones subyacentes** (argumentación, entendimiento mutuo, etc.), en **4 aulas estonias auténticas**, examinando además distintos niveles de CQ (alto/medio/bajo), algo poco estudiado.
+
+165
+00:34:46,828 --> 00:35:25,640
+*Composición.** Resumen (los trabajos state-of-the-art apenas han investigado entornos auténticos y rara vez usan vídeo); 1 Introducción (los docentes de CSCL no pueden monitorear todos los grupos); 2 Trabajos relacionados; 3 Configuración del estudio (3.1 contexto; 3.2 tareas de actividad; 3.3 herramienta de recolección —CoTrack—; 3.4 procedimiento —ventanas de 30 s—; 3.5 características —unidades de acción facial (AU), región bucal, movimiento de cabeza, audio, logs—); 4 Métodos (4.1
+
+166
+00:35:25,640 --> 00:35:42,340
+anotación de la verdad fundamental; 4.2 análisis: correlación y agrupamiento/clustering); 5 Resultados; 6 Discusión (6.3 Limitaciones); 7 Conclusión y trabajo futuro; Agradecimientos; Referencias.
+
+167
+00:35:42,340 --> 00:36:05,790
+*Hallazgos.** El **movimiento vertical de la cabeza** (mirar arriba/abajo) y las características de la **región bucal** (proxy de actividad de habla) son indicadores potenciales de CQ y de dimensiones como argumentación y entendimiento mutuo; los resultados de clustering sugieren que el vídeo permite identificar niveles de calidad en entornos auténticos.
+
+168
+00:36:05,790 --> 00:36:39,015
+*PI que responde.** **PI1 ✔** (dimensiones de CQ; relación indicador→constructo), **PI2 ✔✔** (catálogo de indicadores de vídeo/audio/logs; correlación y clustering), **PI4 ✔** (aulas auténticas, 4 aulas, ventanas de 30 s), **PI5 ✔**, PI3 ✔ (comunidad EC-TEL/LA europea).
+
+169
+00:36:39,015 --> 00:36:53,090
+*Relevancia CSCW.** Pieza clave para tu PI2: evidencia empírica de qué señales físicas (AU, boca, cabeza) sirven como indicadores observables de la calidad de colaboración colocalizada.
+
+170
+00:36:53,090 --> 00:36:59,553
+### A8 (pp. 145–155).
+
+171
+00:36:59,553 --> 00:37:03,678
+How to Build More Generalizable Models for Collaboration Quality?
+
+172
+00:37:03,678 --> 00:37:09,878
+Lessons Learned from Exploring Multi-Contexts Audio-Log Datasets using Multimodal Learning Analytics
+
+173
+00:37:09,878 --> 00:37:16,478
+*Chejara, Prieto, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Shankar.
+
+174
+00:37:16,478 --> 00:37:19,453
+LAK23, Arlington.
+
+175
+00:37:19,453 --> 00:37:28,090
+DOI 10.1145/3576050.3576144.
+
+176
+00:37:28,090 --> 00:37:29,990
+11 páginas.
+
+177
+00:37:29,990 --> 00:37:58,978
+*De qué trata.** Evaluación sistemática de la **generalización entre contextos** de modelos de CQ construidos con un flujo de trabajo MMLA típico, usando **11 conjuntos de datos multimodales (audio + registros)** de actividades colaborativas cara a cara en **seis aulas diferentes**, y explorando **32 pipelines de modelado** (combinaciones de características, fusión, algoritmos) para mejorar la generalización.
+
+178
+00:37:58,978 --> 00:38:35,603
+*Composición.** Título/resumen/palabras clave (MMLA, ML, collaboration quality, generalization); 1 Introducción (los modelos de estimación pueden crear herramientas de monitoreo docente; falta evaluación fuera de un único contexto); 2 Trabajos relacionados; 3 Materiales y métodos (3.1 contexto y recopilación de datos —mismo contexto de entrenamiento y prueba controlado; problemas equivalentes con distintas medidas por grupo—; 3.2 características; 3.2.3 anotación de la verdad fundamental;
+
+179
+00:38:35,603 --> 00:39:05,053
+recorte de valores atípicos en lugar de eliminarlos; evaluación con validación cruzada); 4 Resultados (RQ1: modelos con pipeline típica; RQ2: qué pipeline funciona mejor; distribución aproximadamente balanceada de clases para CQ y dimensiones); 5 Discusión (5.2 RQ2; 5.3 RQ3: impacto de los pasos de modelado —contexto, fusión— en la generalización); Conclusión; Referencias.
+
+180
+00:39:05,053 --> 00:39:22,603
+*Hallazgos.** Las decisiones del pipeline (fuente de datos, características, tipo de fusión, algoritmo) impactan la generalización entre contextos; se identifican configuraciones más robustas; lecciones prácticas para construir modelos de CQ transportables.
+
+181
+00:39:22,603 --> 00:39:54,215
+*PI que responde.** **PI2 ✔✔** (espacio de diseño de la medición automatizada: pipelines, fusión, algoritmos), **PI4 ✔** (11 datasets, 6 aulas, multicontexto), **PI5 ✔** (generalización como vacío central), PI1 parcial (dimensiones de CQ del marco de Rummel), PI3 ✔ (LAK/ACM).
+
+182
+00:39:54,215 --> 00:40:07,565
+*Relevancia CSCW.** Junto a A3 y A9 forma la "trilogía de la generalización" del grupo Tallin: evidencia de que los modelos de colaboración colocalizada aún no son plug-and-play entre contextos.
+
+183
+00:40:07,732 --> 00:40:13,994
+### A9 (pp. 156–162).
+
+184
+00:40:13,944 --> 00:40:21,757
+Impact of window size on the generalizability of collaboration quality estimation models developed using Multimodal Learning Analytics
+
+185
+00:40:21,757 --> 00:40:24,169
+*Chejara et al.
+
+186
+00:40:24,169 --> 00:40:25,557
+Tallin).
+
+187
+00:40:25,557 --> 00:40:28,532
+LAK23, Arlington.
+
+188
+00:40:28,532 --> 00:40:37,219
+DOI 10.1145/3576050.3576143.
+
+189
+00:40:37,219 --> 00:40:41,007
+7 páginas (artículo corto).
+
+190
+00:40:41,007 --> 00:40:46,832
+*De qué trata.** ¿Cuánto tiempo debe "mirar" el modelo para estimar bien la colaboración?
+
+191
+00:40:46,832 --> 00:41:08,044
+Analiza el impacto del **tamaño de la ventana temporal** (30, 60, 90, 120, 180 y 240 s) en el rendimiento y la **generalizabilidad** de modelos de clasificación de la calidad de la colaboración y de sus dimensiones (según el marco de Rummel et al.), con datos multimodales de aulas.
+
+192
+00:41:08,044 --> 00:41:39,019
+*Composición.** Portada (autor: Adolfo Ruiz-Calleja y equipo; bloque ACM); 1 Introducción (dos deficiencias de la MMLA actual: falta de exploración sistemática del tamaño de ventana y falta de evaluación entre contextos; la literatura usa ventanas heterogéneas —30 s lo más común; algunos >400 s—); 2 Marco conceptual (ventana temporal → agregación de características con media y desviación estándar; antecedentes: Martínez-Maldonado et al.
+
+193
+00:41:39,019 --> 00:41:43,807
+con 30/60/90 s; Spikol et al.
+
+194
+00:41:43,807 --> 00:42:22,969
+con 120/240/360 s); 3 Métodos (3.4 procedimiento; 3.5 características; evaluación con validación cruzada de 10 pliegues; código en GitHub); 4 Resultados (rendimiento por dimensión según tamaño de ventana; AUC); 5 Discusión/conclusión (Random Forest ofrece el rendimiento más estable en todos los tamaños de ventana; mejores AUC (~62%) con ventanas de 90 y 180 s; para la orientación a tareas individuales conviene ventana menor; limitaciones: número de contextos, posibilidad de que distintos
+
+195
+00:42:22,969 --> 00:42:27,044
+aspectos requieran distintas ventanas); Referencias.
+
+196
+00:42:27,044 --> 00:42:43,707
+*Hallazgos.** El tamaño de ventana importa y su efecto varía según la dimensión de la colaboración modelada; ventanas intermedias (90–180 s) equilibran rendimiento y generalización; RF es el algoritmo más estable ante cambios de ventana.
+
+197
+00:42:43,707 --> 00:43:07,057
+*PI que responde.** **PI2 ✔✔** (la *granularidad temporal* como parámetro de la medición; agregación de características), **PI4 ✔**, **PI5 ✔**, PI1 parcial (dimensiones de CQ), PI3 ✔ (LAK).
+
+198
+00:43:07,057 --> 00:43:19,294
+*Relevancia CSCW.** Muy útil para PI2: documenta decisiones de diseño de la medición (ventanas, agregación, algoritmo) que suelen omitirse en los reportes.
+
+199
+00:43:19,294 --> 00:43:25,469
+### A10 (pp. 163–183).
+
+200
+00:43:25,469 --> 00:43:31,369
+Measuring Collaboration Quality Using Audio Data and Learning Analytics" (capítulo de libro)
+
+201
+00:43:31,369 --> 00:43:45,619
+*Sambit Praharaj (CAIS/Ruhr-Universität Bochum), Maren Scheffel (Bochum), Hendrik Drachsler (DIPF/Goethe Frankfurt), Marcus Specht (TU Delft/OU Países Bajos).
+
+202
+00:43:45,619 --> 00:43:48,969
+Capítulo 6 de: V. Kovanović et al.
+
+203
+00:43:48,969 --> 00:43:59,907
+eds.), *Discrete Observations of Learning in Digital Environments: Advances in Analytics for Learning and Teaching*, Springer 2023, pp. 91–111.
+
+204
+00:43:59,907 --> 00:44:09,694
+DOI 10.1007/978-3-031-30992-2_6.
+
+205
+00:44:09,694 --> 00:44:11,357
+Preimpresión.
+
+206
+00:44:11,357 --> 00:44:40,644
+*De qué trata.** Capítulo de síntesis (tesis de Praharaj) sobre **detección y medición de la calidad de la colaboración cara a cara con datos de audio** y analíticas no intrusivas: (1) definir CQ usando medidas de audio; (2) diseñar un **setup basado en sensores** para análisis automático; (3) avanzar hacia la cuantificación de CQ y mostrarla en **visualizaciones significativas** (dashboards) para docentes y estudiantes.
+
+207
+00:44:40,804 --> 00:45:16,404
+*Composición.** Resumen; 1 Introducción; **2 Definición de la calidad de la colaboración** (terminología de la revisión: sensores→datos→**indicadores** (eventos de bajo nivel)→**índices** (procesos de alto nivel); esquema de la Figura 6.1); 3 Antecedentes (discurso superpuesto, etc.); 4 Análisis de colaboración automatizada (estado: etapa **semiautomatizada avanzada**, aún requiere intervención humana); 5 Hacia la detección de calidad: del análisis a las visualizaciones; 6 De las
+
+208
+00:45:16,404 --> 00:45:50,379
+visualizaciones a la retroalimentación significativa (ejemplos de estudios: lluvia de ideas colaborativa —a mayor **igualdad** (índice) del **tiempo total de habla** (indicador), menor dominio individual y mejor CQ—; gráficos de red/espacio epistémico de palabras clave contextuales; diseño del dashboard según necesidades temporales —tiempo real vs. diferido—; problemas de "maraña" (hairball) en grafos); 7 Desafíos; 8 Discusión y conclusión (diseño participativo con partes interesadas)
+
+209
+00:45:50,379 --> 00:45:52,166
+Referencias.
+
+210
+00:45:52,166 --> 00:46:38,091
+*PI que responde.** **PI1 ✔✔** (definición operacional de CQ; taxonomía indicador/índice; relación con igualdad de participación), **PI2 ✔✔** (censo de sensores de audio, indicadores, índices, dashboards; grado de automatización: semiautomático), **PI3 ✔** (comunidad Learning Analytics europea: Open University NL, DIPF, Bochum, Delft; términos "co-located collaboration analytics", "group awareness"), **PI4 ✔** (capítulo que integra varios estudios propios: brainstorming, clases de idiomas),
+
+211
+00:46:38,091 --> 00:46:44,929
+PI5 ✔** (desafíos del campo: escalabilidad, ética, adopción).
+
+212
+00:46:44,929 --> 00:46:58,016
+*Relevancia CSCW.** Es probablemente **el documento más útil de tu corpus para PI1+PI2 juntos**: un mapa completo desde el sensor hasta el dashboard para colaboración colocalizada.
+
+213
+00:46:58,016 --> 00:47:04,304
+### A11 (pp. 183–193).
+
+214
+00:47:04,304 --> 00:47:08,741
+METS: Multimodal Learning Analytics of Embodied Teamwork Learning
+
+215
+00:47:08,741 --> 00:47:17,104
+*Linxuan Zhao, Abra Osborne, Lixiang Yan, Zachari Swiecki, Samantha Dix, Dragan Gašević y cols.
+
+216
+00:47:17,104 --> 00:47:19,204
+Monash University).
+
+217
+00:47:19,204 --> 00:47:22,179
+LAK23, Arlington.
+
+218
+00:47:22,179 --> 00:47:30,666
+DOI 10.1145/3576050.3576076.
+
+219
+00:47:30,666 --> 00:47:57,866
+*De qué trata.** Propone **METS (Multimodal Embodied Teamwork Signature)**: un método para estudiar la **calidad del trabajo en equipo encarnado** (embodied teamwork) combinando **comunicación (audio)** y **comportamientos espaciales (posicionamiento en interiores)** en simulaciones de equipos de **enfermería** (licenciatura, Monash), donde los estudiantes se mueven libremente y se reconfiguran en subgrupos.
+
+220
+00:47:57,866 --> 00:48:30,266
+*Composición.** 1 Introducción (aprender a colaborar presencialmente es insustituible en sectores profesionales; los comportamientos espaciales contribuyen al teamwork eficaz —Yan et al., Echeverría et al.—; las propiedades resumidas del audio capturan solo comportamientos superficiales); 2 Antecedentes (2.1 análisis de comunicación en grupos pequeños; 2.2 análisis del comportamiento espacial; 2.3 brecha de investigación: falta un enfoque robusto para modelar comunicación interpersonal
+
+221
+00:48:30,266 --> 00:49:04,041
+presencial situada en el espacio); 3 Método (3.1 situación de aprendizaje: simulaciones de equipo en enfermería con 4 fases —entrega inicial, fase de emergencia, evaluación…—; 15 equipos; 3 docentes de enfermería evaluaron el desempeño; recolección: señales de audio por estudiante + rastros de posicionamiento + evaluaciones de los docentes; METS integra audio y espacio para cada fase del diseño de aprendizaje); 4 Resultados (medias marginales estimadas de regresión para RQ1: diferencias entre
+
+222
+00:49:04,041 --> 00:49:30,579
+equipos de alto y bajo rendimiento a lo largo de toda la sesión; RQ2: diferencias por fases —p. ej. más tiempo dedicado a la planificación en equipos de alto rendimiento, conexión más fuerte con la planificación—; RQ3: diferencias en espacios de interés particulares del aula); Discusión (implicaciones para el análisis del aprendizaje y el trabajo en equipo encarnado); Limitaciones; Conclusión; Referencias.
+
+223
+00:49:30,748 --> 00:50:13,173
+*PI que responde.** **PI1 ✔** (teamwork quality encarnado; constructos: coordinación espacial, comunicación, rendimiento de equipo), **PI2 ✔✔** (sensores: audio individual + posicionamiento indoor; "firmas" multimodales; evaluación experta como ground truth; regresión), **PI4 ✔** (estudio empírico en simulación profesional: 15 equipos de enfermería, docentes evaluadores), **PI5 ✔**, PI3 ✔ (comunidad LAK/Monash —Gašević—; término "embodied teamwork").
+
+224
+00:50:13,173 --> 00:50:25,798
+*Relevancia CSCW.** Extiende la medición de la colaboración más allá del habla: el **cuerpo y el espacio** como datos de primera clase, en formación profesional de alto riesgo.
+
+225
+00:50:25,798 --> 00:50:31,723
+### A12 (pp. 194–202).
+
+226
+00:50:31,723 --> 00:50:38,785
+MR-CoCo: An Open Mixed-Reality Testbed for Co-located Pairs" (configuración colaborativa de productos)
+
+227
+00:50:38,785 --> 00:50:49,010
+*Daniel Medeiros (Pires; Télécom Paris, IP Paris), Mine Dastan, Michele Fiorentino (Politécnico de Bari), Fabio Vangi.
+
+228
+00:50:49,010 --> 00:50:55,523
+IEEE Transactions on Visualization and Computer Graphics (2025, early access).
+
+229
+00:50:55,523 --> 00:51:04,098
+DOI 10.1109/TVCG.2025.3616734.
+
+230
+00:51:04,098 --> 00:51:20,610
+*De qué trata.** Aunque la RM se ha explorado para diseño colaborativo **remoto**, hay un vacío en la **configuración de productos por parejas colocalizadas** (amigos/parejas que deciden compras juntos, p. ej. en concesionarios).
+
+231
+00:51:20,610 --> 00:51:35,098
+Presentan **MR-CoCo**, banco de pruebas abierto de Realidad Mixta para estudiar la toma de decisiones y la colaboración en parejas presenciales (caso de uso: configurar un **velero**), con anclaje espacial compartido.
+
+232
+00:51:35,098 --> 00:51:48,385
+*Composición.** Resumen; 1 Introducción; 2 Trabajos relacionados (2.1 configuradores de producto en MR; 2.2 sistemas MR multiusuario colocalizados —incl.
+
+233
+00:51:48,385 --> 00:52:24,623
+colaboración en RA con supervisor remoto, Norman et al.—); 3 El sistema MR-CoCo (RA para visualizar el producto a escala real; anclajes espaciales compartidos; personalización sincronizada en tiempo real); 4 Diseño experimental (preguntas de investigación sobre experiencia de compra/colaboración y copresencia; configuración, parejas participantes, procedimiento en 4 pasos —Figura 5—, métricas); 4.4 Participantes: **48 adultos voluntarios (24 hombres, 24 mujeres)** reclutados por formulario en
+
+234
+00:52:24,623 --> 00:53:01,910
+línea → 24 parejas (8 M-M, 8 F-F, 8 mixtas); instrumentos: **SUS** (usabilidad, 10 ítems Likert), cuestionarios de **copresencia** y de colaboración, observación del experimentador; 5 Resultados (puntuaciones medias de copresencia por categoría; SUS medio vs. umbral mínimo —Figura 8—; percepciones de la experiencia de configuración); 6 Discusión (7 Limitaciones: discrepancias de calidad gráfica entre dispositivos, etc.; mejoras futuras: asistentes virtuales con IA); Conclusión; Referencias.
+
+235
+00:53:01,910 --> 00:53:45,985
+*PI que responde.** **PI1 ✔** (copresencia y colaboración en parejas colocalizadas mediadas por MR; experiencia de usuario conjunta), **PI2 ✔** (métricas subjetivas validadas: SUS, copresencia, colaboración; registros del sistema; automatización baja —cuestionarios—), **PI4 ✔** (experimento de usuario controlado con 24 parejas), **PI5 ✔** (limitaciones de visualización/sistema), PI3 ✔ (comunidad IEEE VR/TVCG: términos "co-presence", "co-located multi-user MR").
+
+236
+00:53:45,985 --> 00:53:59,685
+*Relevancia CSCW.** Aporta el vocabulario y las escalas de la comunidad de RV/RM para la colaboración presencial (copresencia), complementando el vocabulario educativo (CQ).
+
+237
+00:53:59,685 --> 00:54:05,360
+### A13 (pp. 203–205).
+
+238
+00:54:05,360 --> 00:54:12,835
+Papel de consorcio doctoral (fragmento): estimación automática de la calidad de la colaboración en entornos presenciales
+
+239
+00:54:12,835 --> 00:54:16,323
+*Pankaj Chejara (Univ.
+
+240
+00:54:16,323 --> 00:54:17,848
+de Tallin).
+
+241
+00:54:17,848 --> 00:54:24,573
+IEEE ICALT 2020, Doctoral Consortium, p. ~390–392.
+
+242
+00:54:24,573 --> 00:54:33,335
+DOI 10.1109/ICALT49669.2020.00123.
+
+243
+00:54:33,335 --> 00:54:42,473
+Supervisores: Adolfo Ruiz-Calleja, Luis P. Prieto, María Jesús Rodríguez-Triana.** *(Fragmento de 3 páginas.
+
+244
+00:54:42,473 --> 00:54:44,085
+*
+
+245
+00:54:44,085 --> 00:54:58,648
+*De qué trata.** Presenta el **plan de tesis** de Chejara: el problema de **estimar automáticamente la calidad de la colaboración en entornos presenciales** usando sensores y ML para ayudar a los docentes a monitorear el aula.
+
+246
+00:54:58,648 --> 00:55:07,260
+Es una "fotografía" del programa de investigación que luego produjo A3, A7, A8, A9, A16 y A19.
+
+247
+00:55:07,420 --> 00:55:38,970
+*Composición.** I. Motivación (la colaboración como fenómeno complejo con **cinco aspectos generales de la colaboración exitosa: comunicación, coordinación, procesamiento conjunto de información, motivación y relación interpersonal**; la LA tradicional se basa en registros digitales de entornos mediados por tecnología; sesgo hacia entornos online; con sensores baratos y más computación surge la MMLA para entornos del mundo real; indicadores como tiempo de habla y distancia entre manos)
+
+248
+00:55:38,970 --> 00:56:12,907
+estructura de la tesis (Figura 1) y metodología iterativa en 4 fases: **Análisis, Desarrollo, Pruebas y Refinamiento, y Reflexión**; pregunta principal: "¿Cómo estimar automáticamente la calidad de la colaboración en entornos presenciales aprovechando sensores + ML para ayudar a los docentes a monitorearla en el aula?", con 3 sub-investigaciones/fases; A. Estudio piloto (con docentes; herramienta **Graasp** de indagación; datos: registros + observaciones; preprocesamiento con **PAMEL**;
+
+249
+00:56:12,907 --> 00:56:16,395
+observadores humanos como "sensores"); B.
+
+250
+00:56:16,395 --> 00:56:31,632
+Primera iteración (**CoTrack**: captura audio + registros del espacio físico y digital —tiempo de habla, caracteres añadidos/eliminados—; algoritmo de estimación de CQ; usado en 2 laboratorios y 2 aulas).
+
+251
+00:56:31,632 --> 00:57:14,182
+*PI que responde.** **PI1 ✔** (los 5 aspectos de la colaboración exitosa —marco de Rummel/Meier— explícitos), **PI2 ✔** (censo de sensores e indicadores: micrófono, eye tracker, Kinect, vídeo, conductancia de la piel; tiempo de habla, distancia entre manos; CoTrack/PAMEL), **PI4 ✔** (metodología de investigación de tesis: diseño iterativo en 4 fases, pilotos), PI3 ✔ (comunidad IEEE ICALT + LA), PI5 parcial (agenda de investigación = vacíos del campo en 2020).
+
+252
+00:57:14,182 --> 00:57:27,195
+*Relevancia CSCW.** Aunque es un fragmento, es un mapa compacto del programa MMLA-colocalizada y de su instrumentación (CoTrack), útil para PI2/PI3.
+
+253
+00:57:27,195 --> 00:57:33,370
+### A14 (pp. 206–232).
+
+254
+00:57:33,370 --> 00:57:40,632
+Physicality as an Anchor for Coordination: Examining Collocated Collaboration in Physical and Mobile Augmented Reality
+
+255
+00:57:40,632 --> 00:57:44,345
+*Jen Liu, Phoebe Sengers (Cornell).
+
+256
+00:57:44,345 --> 00:57:55,332
+PACM on Human-Computer Interaction, Vol. 5, CSCW2, Artículo 470 (octubre 2021), ~27 páginas.
+
+257
+00:57:55,332 --> 00:58:01,582
+DOI 10.1145/3479856.
+
+258
+00:58:01,582 --> 00:58:13,307
+*De qué trata.** Estudia cómo la **realidad aumentada móvil (MAR)** afecta la **coordinación** de usuarios **colocalizados** frente a un entorno físico equivalente.
+
+259
+00:58:13,307 --> 00:58:21,382
+Tarea: **co-crear un artefacto 3D** (construir una estructura con bloques, físicos o virtuales sobre la mesa).
+
+260
+00:58:21,382 --> 00:58:36,757
+Conceptualiza dos modos de coordinación: **orientada al artefacto** (el objeto físico compartido ancla la coordinación) y **orientada al espacio** (el espacio de trabajo físico compartido cumple ese rol cuando el artefacto es virtual).
+
+261
+00:58:36,757 --> 00:59:12,082
+*Composición.** Resumen + palabras clave (RA, colaboración presencial, cocreación, artefactos virtuales/físicos); 1 Introducción; 2 Investigaciones relacionadas (colaboración colocalizada en entornos físicos y aumentados); 3 Método (estudio controlado: se invita a los participantes **en parejas**; 2 condiciones —física: bloques de madera reales; MAR: RA en dispositivos móviles simulando la misma tarea—; laboratorio con gran mesa central y **4 cámaras** grabando desde 4 ángulos; perfil de
+
+262
+00:59:12,082 --> 00:59:19,645
+participantes: alto conocimiento informático; 3.4 medición de percepciones con escalas —incl.
+
+263
+00:59:19,645 --> 00:59:54,145
+la Escala Semántica de Producto de Besemer (CPSS)— y evaluación subjetiva de la experiencia de usuario); 4 Resultados (tiempo por tarea; **elección de formación** alrededor de la mesa: en la condición física 163 s por tarea en promedio…; los movimientos alrededor de la mesa sirven como señales de comunicación y coordinación; gestos con las manos: 10,5 por sesión en físico vs. 2,2 en MAR; tablas y figuras de comportamientos por condición); 5 Discusión (la fisicalidad compartida importa para la
+
+264
+00:59:54,145 --> 01:00:04,657
+capacidad de coordinarse; implicaciones para el diseño de colaboración basada en RA: direcciones para diseñadores); Limitaciones; Conclusión; Referencias.
+
+265
+01:00:04,828 --> 01:00:29,365
+*Hallazgos.** En físico, los participantes aprovecharon mejor el propio artefacto para sus necesidades de coordinación (**coordinación orientada al artefacto**); en MAR, la coordinación se apoyó en el espacio físico compartido (**orientada al espacio**), con menos gestos y más movimientos corporales como señales; ambas condiciones fueron disfrutadas y bien valoradas en UX.
+
+266
+01:00:29,365 --> 01:01:17,315
+*PI que responde.** **PI1 ✔✔** (conceptualización fina de la **coordinación** colocalizada y de la fisicalidad como ancla; constructos vecinos: copresencia implícita, UX), **PI2 ✔** (análisis de vídeo multicámara de comportamientos de coordinación + escalas subjetivas CPSS/UX; cualitativo-cuantitativo; automatización baja), **PI4 ✔** (experimento controlado entre sujetos, parejas, tarea de diseño 3D), **PI5 ✔**, PI3 ✔ (comunidad CSCW/ACM: "co-located collaboration", "coordination").
+
+267
+01:01:17,315 --> 01:01:29,440
+*Relevancia CSCW.** Es el artículo más "CSCW clásico" del corpus: teoría de la coordinación en interacción cara a cara mediada por tecnología emergente (RA).
+
+268
+01:01:29,440 --> 01:01:31,790
+Central para tu PI1.
+
+269
+01:01:31,790 --> 01:01:38,253
+### A15 (pp. 233–238).
+
+270
+01:01:38,253 --> 01:01:45,190
+Evaluación en el aula orientada a procesos impulsada por el modelo DFIF de analítica de aprendizaje multimodal
+
+271
+01:01:45,190 --> 01:01:53,203
+*Bin Chen (Universidad Naval de Ingeniería de Wuhan), Juan Li (Instituto de Tecnología de Wuchang, Wuhan).
+
+272
+01:01:53,203 --> 01:02:01,265
+CIBDA 2026 (7.ª Conferencia Internacional sobre Informática y Aplicaciones de Big Data), Wuhan, China.
+
+273
+01:02:01,265 --> 01:02:09,678
+ACM, ISBN 979-8-4007-2257-8.
+
+274
+01:02:09,678 --> 01:02:12,190
+CC BY 4.0.
+
+275
+01:02:12,190 --> 01:02:15,853
+pp. ~1620–1625.
+
+276
+01:02:15,853 --> 01:02:40,365
+*De qué trata.** Propone el modelo **DFIF (Datos–Características–Análisis–Retroalimentación; "Data-Feature-Insight-Feedback")** para una **evaluación de aula orientada a procesos**, científica, precisa y sostenible, integrando MMLA con pedagogía (marco tripartito: ciencia del aprendizaje + evaluación + tecnología, con TPACK como apoyo metodológico).
+
+277
+01:02:40,365 --> 01:02:48,190
+Aplicación: clases de **programación** (registros del IDE e historiales de Git + audio/vídeo).
+
+278
+01:02:48,190 --> 01:03:23,978
+*Composición.** Resumen + palabras clave (MMLA, evaluación orientada a procesos, IA educativa, colaboración humano-IA) + conceptos CCS; 1 Introducción (la evaluación tradicional sumativa tiene retroalimentación tardía y dimensiones limitadas; la MMLA suele ser tecnocéntrica; los dominios son complementarios); 2 Marco teórico de integración tripartita (qué evaluar, por qué y cómo; dimensiones del compromiso: cognitivo —profundidad y persistencia—, afectivo —implicación e interés—, etc.); 3
+
+279
+01:03:23,978 --> 01:03:56,165
+Desarrollo de la evaluación DFIF (arquitectura de 4 capas —Figura 1—; la capa de percepción de datos como punto de entrada; cálculo de indicadores con mecanismo de doble vía que integra distribuciones y patrones de interacción; privacidad: datos crudos locales 72 h, funciones encriptadas); 4 Implementación y evaluación del modelo (diseño cuasi-experimental: **clases paralelas de n=40 cada una** como grupo experimental y de control; 4 fases secuenciales dentro de una unidad didáctica;
+
+280
+01:03:56,165 --> 01:04:13,703
+instrumentos: grabaciones de audio/vídeo, registros del IDE, Git; calificaciones de expertos, puntuaciones académicas, encuestas y entrevistas; visualización de esfuerzo e independencia sostenidos); Referencias; Agradecimientos (financiación).
+
+281
+01:04:13,703 --> 01:05:00,303
+*PI que responde.** **PI1 ✔** (evaluación orientada a procesos; dimensiones de engagement/colaboración), **PI2 ✔✔** (modalidades: audio, vídeo, logs de IDE y Git; arquitectura de indicadores; dashboard/feedback; consideraciones de privacidad), **PI4 ✔** (cuasi-experimento con grupo control en aulas reales de programación), **PI5 ✔** (subjetividad y dimensiones limitadas de la evaluación tradicional; retos de la MMLA tecnocéntrica), PI3 ✔ (comunidad ACM china de big data educativo; término
+
+282
+01:05:00,303 --> 01:05:02,515
+human-AI collaboration").
+
+283
+01:05:02,515 --> 01:05:16,690
+*Relevancia CSCW.** Muestra cómo otra comunidad (educación en computación, China) nombra y operacionaliza la evaluación de la colaboración: útil para PI3 (variación terminológica y geográfica).
+
+284
+01:05:16,852 --> 01:05:31,027
+### A16 (pp. 239–254; **duplicado**: 239–246 y 247–254).
+
+285
+01:05:31,027 --> 01:05:37,814
+Quantifying Collaboration Quality in Co-located Classroom Environments with MMLA" (manuscrito anonimizado)
+
+286
+01:05:37,814 --> 01:05:44,177
+*Versión ciega ("Anonimizado para su revisión") de un manuscrito de Chejara et al.
+
+287
+01:05:44,177 --> 01:05:55,677
+Tallin), publicado después como "Quantifying Collaboration Quality in Face-to-Face Classroom Settings Using MMLA" en el workshop CrossMMLA@LAK'21 (CEUR; eds.
+
+288
+01:05:55,677 --> 01:06:01,139
+Nolte, Alvarez, Hishiyama, Chounta, Rodríguez-Triana et al.).
+
+289
+01:06:01,139 --> 01:06:08,939
+⚠ El PDF contiene el mismo manuscrito traducido dos veces (8 páginas cada copia).
+
+290
+01:06:08,939 --> 01:06:24,414
+*De qué trata.** Estudio de caso que evalúa la viabilidad de **cuantificar la CQ y sus subdimensiones** (p. ej. **flujo de la colaboración**) en un aula real, en un **continuo** (no categorías alta/baja).
+
+291
+01:06:24,414 --> 01:06:38,277
+Datos multimodales (**audio + registros**) de **dos grupos** colaborando cara a cara en una **tarea de escritura colaborativa**; comparación de modelos de ML contra **codificadores humanos**.
+
+292
+01:06:38,277 --> 01:07:15,027
+*Composición.** Título/resumen/palabras clave (CSCL, multimodal, learning analytics, collaboration quality); 1 Introducción (la colaboración se estudió con observación/entrevistas/etnografía —rico pero no escalable—; la tecnología mediadora aporta registros; sistemas de feedback desde "mirroring" hasta guía); 2 Trabajos relacionados (estimación de CQ; clasificación categórica vs. cuantificación en continuo); 3 Metodología (recogida de audio+logs; anotación humana de la verdad fundamental en
+
+293
+01:07:15,027 --> 01:07:38,614
+continuo); 4 Estudio de caso (modelos de regresión —**SVR (vectores de soporte)**, bosques aleatorios, etc.—; métrica **RMSE**; comparación con el rendimiento de codificadores humanos; estimación de **siete subdimensiones**; exploración de estrategias de fusión); 5 Conclusiones y trabajo futuro; Referencias.
+
+294
+01:07:38,614 --> 01:07:59,252
+*Hallazgos.** Es factible estimar cuantitativamente la CQ y sus subdimensiones incluso con características simples de audio y registros: el modelo SVR **cubrió ~50% de la brecha entre el azar y el rendimiento humano**; abrir la puerta a cuantificación "en profundidad" con características y algoritmos más avanzados.
+
+295
+01:07:59,252 --> 01:08:38,189
+*PI que responde.** **PI1 ✔** (CQ en continuo + subdimensiones, p. ej. collaboration flow), **PI2 ✔✔** (regresión sobre audio+logs; RMSE; benchmark contra humanos), **PI4 ✔** (estudio de caso con 2 grupos; escritura colaborativa), **PI5 ✔** (muestra pequeña; rendimiento lejos del humano), PI3 ✔ (comunidad CrossMMLA: término "co-located/face-to-face classroom MMLA").
+
+296
+01:08:38,189 --> 01:08:50,252
+*Relevancia CSCW.** Primer eslabón de la línea Tallin (luego A3, A7, A8, A9, A19): de clasificación binaria a regresión en continuo.
+
+297
+01:08:50,252 --> 01:08:57,214
+### A17 (pp. 255–265).
+
+298
+01:08:57,214 --> 01:09:02,102
+Recurrence Quantification Analysis of Gaze Dynamics During Team Collaboration
+
+299
+01:09:02,102 --> 01:09:10,727
+*Angelina Abitino, Robert G. Moulder, Brandon M. Booth, Sidney K. D'Mello (University of Colorado Boulder).
+
+300
+01:09:10,727 --> 01:09:13,702
+LAK23, Arlington.
+
+301
+01:09:13,702 --> 01:09:35,139
+DOI 10.1145/3576050.3576113. 11 páginas (pp. 433–439+ de las actas).** ⚠ *Contexto remoto: tríadas con pantalla compartida (no colocalizadas) — inclúyelo como contraste.
+
+302
+01:09:35,139 --> 01:10:08,102
+*De qué trata.** Para capturar la **dinámica grupal entrelazada** que se pierde al concatenar o agregar características individuales, aplica **mdRQA (análisis de cuantificación de recurrencia multidimensional)** a datos de **mirada** de **279 individuos en equipos de tres** resolviendo problemas de física computacional en un entorno de **resolución colaborativa de problemas (CPS) remota** (un "conductor" opera la pantalla; los demás colaboran por audio/vídeo sin control).
+
+303
+01:10:08,260 --> 01:10:44,247
+*Composición.** Título/resumen/palabras clave (RQA, dinámica de equipo, dinámica de la mirada, teamwork, atención compartida) + conceptos CCS (interacción colaborativa; estudios empíricos en computación colaborativa y social); 1 Introducción (la competencia colaborativa es escasa; la colaboración remota post-COVID añadió desafíos cognitivos y sociales; la "analítica colaborativa" busca caracterizar la CPS con flujos multimodales —habla, expresiones faciales, movimiento, fisiología, mirada—
+
+304
+01:10:44,247 --> 01:11:20,922
+tutoría de equipo inteligente en tiempo real); 2 Método (2.1 Datos: 279 individuos, 93 tríadas; tarea de física computacional; mirada → ubicaciones discretas de pantalla; mdRQA con la función mdrqa() en R; métricas RQA por equipo —recurrencia, determinismo, etc.—; importancia de la mirada como índice de atención visual social y estado cognitivo); modelos: regresión logística y **bosque aleatorio** para predecir el desempeño del equipo (ajuste de hiperparámetros: nº de árboles, profundidad); 3
+
+305
+01:11:20,922 --> 01:11:41,210
+Resultados (modelos lineales de efectos mixtos: los experimentos originales superan significativamente…; importancia relativa de cada métrica RQA —Figura 5—; los enfoques basados en mdRQA superan a los agregativos/concatenación); 4 Discusión; Referencias; Agradecimientos.
+
+306
+01:11:41,210 --> 01:11:57,285
+*Hallazgos.** Las métricas de recurrencia multidimensional de la mirada predicen el desempeño del equipo mejor que los enfoques que promedian o concatenan señales individuales; la coordinación de la mirada (atención compartida) es un marcador de teamwork efectivo.
+
+307
+01:11:57,285 --> 01:12:32,572
+*PI que responde.** **PI1 ✔** (teamwork, atención compartida, CPS; constructos vecinos), **PI2 ✔✔** (mdRQA sobre mirada como técnica de medición de dinámicas grupales; automatización total), **PI4 ✔** (279 participantes, tríadas remotas, ML + efectos mixtos), **PI5 ✔**, PI3 ✔ (LAK + D'Mello lab).
+
+308
+01:12:32,572 --> 01:12:46,722
+*Relevancia CSCW.** Metodológicamente importante (cómo medir *dinámica* y no solo promedios), pero su contexto es remoto: en tu revisión sobre colocalizados sirve como **contraste metodológico**.
+
+309
+01:12:46,722 --> 01:12:53,447
+### A18 (pp. 266–267).
+
+310
+01:12:53,447 --> 01:13:00,197
+Speech Analytics on Individual and Group Audio Data to Understand Collaboration" (fragmento de 2 páginas)
+
+311
+01:13:00,197 --> 01:13:08,122
+*Robin Jephthah Rajarathinam, Cynthia M. D'Angelo, Emma Mercier (University of Illinois Urbana-Champaign).
+
+312
+01:13:08,122 --> 01:13:15,735
+Actas de CSCL 2022 (ISLS), p. 599 y ss.
+
+313
+01:13:15,735 --> 01:13:36,022
+*De qué trata.** Investiga la viabilidad de usar el **habla de los estudiantes** —capturada con **micrófonos individuales montados en la cabeza** frente a **audio grupal**— para determinar la **calidad de la colaboración grupal** en aulas tradicionales, donde los docentes no pueden observar a todos los grupos.
+
+314
+01:13:36,022 --> 01:13:45,235
+Compara qué información aporta cada tipo de audio (individual vs. grupal) y cómo se relacionan con la comprensión y medición de la colaboración.
+
+315
+01:13:45,235 --> 01:14:17,472
+*Composición (del fragmento).** Introducción y fundamentos teóricos (facilitar el aprendizaje colaborativo en aulas con muchos grupos de 2–4 estudiantes es difícil; los instructores no pueden brindar intervención eficaz sin monitoreo; el cara a cara es el entorno natural de la colaboración en el aula; se necesitan soluciones basadas en tecnología); Método (estudiantes en grupos de 3–4 en tareas colaborativas poco estructuradas diseñadas para fomentar la colaboración; **tabletas sincronizadas
+
+316
+01:14:17,472 --> 01:14:45,447
+con un espacio de trabajo compartido**; **18 grupos** participaron en grabaciones de audio durante **4 semanas**; micrófono con cancelación de ruido montado en la cabeza por estudiante); Resultados/Recomendaciones (la superposición de turnos y la toma de turnos son útiles para predecir patrones del habla; cierta información **no se puede obtener de forma consistente con audio grupal** —p. ej. aportes individuales—); Discusión.
+
+317
+01:14:45,604 --> 01:15:16,204
+*PI que responde.** **PI2 ✔✔** (audio individual vs. grupal como decisión de instrumentación; turn-taking y overlap como indicadores), **PI4 ✔** (despliegue en aulas reales, 18 grupos, 4 semanas), PI1 parcial (calidad de la colaboración como constructo-meta), PI3 ✔ (comunidad ISLS/CSCL), PI5 parcial.
+
+318
+01:15:16,204 --> 01:15:28,879
+*Relevancia CSCW.** Aunque es un fragmento, documenta una decisión de diseño clave para PI2: **dónde poner el micrófono** cambia qué aspectos de la colaboración son medibles.
+
+319
+01:15:28,879 --> 01:15:35,666
+### A19 (pp. 268–285).
+
+320
+01:15:35,666 --> 01:15:42,741
+The impact of attribute noise on automated estimation of collaboration quality: Learning analytics in authentic classrooms
+
+321
+01:15:42,741 --> 01:15:53,654
+*Pankaj Chejara, Luis P. Prieto, Yannis Dimitriadis, María Jesús Rodríguez-Triana, Adolfo Ruiz-Calleja, Reet Kasepalu, Shashi Kant Shankar.
+
+322
+01:15:53,654 --> 01:15:59,291
+Journal of Learning Analytics 11(2):73–90 (2024).
+
+323
+01:15:59,291 --> 01:16:06,616
+DOI 10.18608/jla.2024.8253.
+
+324
+01:16:06,616 --> 01:16:16,879
+*De qué trata.** En aulas reales los datos multimodales llegan **ruidosos** (ruido de atributos: fallos de hardware, complejidad tecnológica).
+
+325
+01:16:16,879 --> 01:16:29,116
+Este artículo explora sistemáticamente **cómo degrada el ruido de atributos** a los modelos automáticos de estimación de la calidad de la colaboración y **qué algoritmos de ML son más robustos**.
+
+326
+01:16:29,116 --> 01:17:02,829
+*Composición.** Resumen + "Notas para la práctica" (sección característica de JLA: bullets para profesionales —p. ej. "el bosque aleatorio es más robusto frente al ruido"; "los modelos basados en audio sufren ~50% de degradación con ruido de atributos"); palabras clave (MMLA, colaboración, CSCL, ML); 1 Introducción (la aplicabilidad práctica de los modelos en entornos reales está poco investigada; la mayoría de los estudios son de laboratorio); 2 Fundamentos teóricos (calidad de la
+
+327
+01:17:02,829 --> 01:17:37,241
+colaboración y sus aspectos subyacentes; 2.2 ruido de atributos —definición: error aleatorio o varianza no explicada en una variable medida—; tipos de escenarios ruidosos: ruido de atributo de fuente única, atributos faltantes de fuente única y múltiples fuentes); 3.2 Investigación MMLA sobre estimación de CQ (dispositivos: micrófonos, cámaras, monitores…); Métodos (inyección controlada de ruido en el conjunto de datos de aulas auténticas —la Tabla 2 muestra el dataset con 100% de ruido—; 4
+
+328
+01:17:37,241 --> 01:18:00,554
+algoritmos: **bosque aleatorio, Naive Bayes, árbol de decisión y AdaBoost**; validación cruzada); Resultados (RQ1: impacto del ruido por algoritmo y modalidad; RQ2: qué algoritmos muestran rendimiento más robusto); Discusión; Financiación (PRG del Consejo de Investigación de Estonia, becas españolas); Referencias.
+
+329
+01:18:00,554 --> 01:18:18,379
+*Hallazgos.** RF y DT superan a NB y AdaBoost bajo ruido de atributos; los modelos basados en audio se degradan ~50%; el DT ofrece además explicabilidad; recomendación práctica: anticipar el ruido al desplegar MMLA en aulas auténticas.
+
+330
+01:18:18,379 --> 01:18:54,354
+*PI que responde.** **PI2 ✔✔** (robustez de la medición automatizada ante datos imperfectos —dimensión poco estudiada—), **PI4 ✔** (simulación de ruido sobre datos de aulas auténticas; comparación de algoritmos), **PI5 ✔✔** (el vacío laboratorio-vs-mundo-real es su razón de ser), PI1 parcial (CQ y dimensiones vía Rummel), PI3 ✔ (comunidad JLA/ISLS).
+
+331
+01:18:54,354 --> 01:19:03,941
+*Relevancia CSCW.** Para tu PI2 aporta el criterio de **fiabilidad en condiciones reales**, no solo precisión de laboratorio.
+
+332
+01:19:03,941 --> 01:19:10,329
+### A20 (pp. 286–299).
+
+333
+01:19:10,329 --> 01:19:17,366
+Towards Collaborative Convergence: Quantifying Collaboration Quality with Automated Co-located Collaboration Analytics
+
+334
+01:19:17,366 --> 01:19:24,654
+*Sambit Praharaj, Maren Scheffel, Marcel Schmitz, Marcus Specht, Hendrik Drachsler.
+
+335
+01:19:24,654 --> 01:19:29,816
+LAK22 (online, EE. UU.), 12 páginas.
+
+336
+01:19:29,816 --> 01:19:37,829
+DOI 10.1145/3506860.3506922.
+
+337
+01:19:37,829 --> 01:19:58,454
+*De qué trata.** Sistema y estudio para **cuantificar la calidad de la colaboración colocalizada a partir del habla grupal**, analizando la **"convergencia colaborativa"** en los espacios **social** (quién habla, turnos) y **epistémico** (sobre qué hablan), y visualizándola en un **panel de control para docentes**.
+
+338
+01:19:58,612 --> 01:20:35,212
+*Composición.** (Tabla 1: las 13 tareas/actividades de aprendizaje usadas —completar oraciones, leer y resumir un artículo, escribir un ensayo colaborativo, preparar presentaciones, problemas geométricos, juegos de rol empleado/empleador, debates a favor/en contra…— en asignaturas de idiomas (inglés/estonio) y química); 1 Introducción; 2 Colaboración en el mismo lugar (co-located) (indicadores no verbales del habla: toma de turnos, tiempo total de habla, superposiciones; indicadores
+
+339
+01:20:35,212 --> 01:21:10,262
+epistémicos; la CP tiene lugar en espacios físicos); 3 Montaje experimental (3.1 contexto experimental: aulas estonias; actividades diseñadas con el método **FoLA2 —Fellowship of Learning Activity and Analytics—** co-diseñadas con un investigador de ciencias de la educación; 3.2 métodos: captura de audio grupal, VAD (detección de actividad de voz), ASR; construcción de la **matriz de coocurrencia de palabras clave** para el espacio epistémico y su análisis con **ENA (Epistemic Network Analysis)
+
+340
+01:21:10,262 --> 01:21:47,249
+*; perfiles basados en roles); 4 Resultados (4.1 convergencia dentro de una fase en una sesión; roles emergentes —p. ej. el rol "asesor/advisor"—; primeros 20-30 minutos de interacción social; palabras clave contextuales, su frecuencia y asociaciones; 4.3 panel de control que integra los componentes —nodos resaltados por rol, color/forma—; diseño con distintos filtros; resolución del problema de "maraña" en grafos); 5 Investigaciones futuras sobre el [panel/sistema]; 6 Discusión (cómo decidir
+
+341
+01:21:47,249 --> 01:21:55,624
+entre discusión plenaria vs. dividir en grupos; qué transmiten los cambios de enfoque); 7 Conclusiones; Referencias.
+
+342
+01:21:55,624 --> 01:22:08,324
+*RQs (visibles en p. 289).** RQ2: ¿cómo se pueden analizar automáticamente los indicadores de colaboración presencial a partir de datos de habla grupal?
+
+343
+01:22:08,324 --> 01:22:14,612
+RQ3: ¿cómo visualizar indicadores de calidad de la colaboración a partir de datos de habla?
+
+344
+01:22:14,612 --> 01:22:50,924
+*PI que responde.** **PI1 ✔** ("convergencia colaborativa"; espacios social y epistémico como dimensiones de la CQ), **PI2 ✔✔** (pipeline de audio → indicadores → ENA → dashboard; semiautomatizado), **PI4 ✔** (13 tareas auténticas en aulas estonias, co-diseño FoLA2), **PI5 ✔** (investigaciones futuras sobre el dashboard), PI3 ✔ (LAK + Open University NL).
+
+345
+01:22:50,924 --> 01:23:00,612
+*Relevancia CSCW.** Excelente ejemplo de ciclo completo *sensor → indicador → visualización → orquestación docente* en colaboración presencial.
+
+346
+01:23:00,612 --> 01:23:06,524
+### A21 (pp. 300–323).
+
+347
+01:23:06,524 --> 01:23:11,612
+A rating scheme for assessing the quality of computer-supported collaboration processes
+
+348
+01:23:11,612 --> 01:23:18,224
+*Anne Meier, Hans Spada, Nikol Rummel (Universidad de Friburgo, Alemania).
+
+349
+01:23:18,224 --> 01:23:26,924
+International Journal of Computer-Supported Collaborative Learning (IJCSCL) 2(1):63–86 (2007).
+
+350
+01:23:26,924 --> 01:23:46,587
+DOI 10.1007/s11412-006-9005-x.** ⚠ *Contexto: díadas colaborando por videoconferencia (remotas), pero es LA referencia fundacional del constructo "calidad de la colaboración" que usan casi todos los demás artículos.
+
+351
+01:23:46,587 --> 01:24:23,774
+*De qué trata.** Define y operacionaliza la **calidad del proceso de colaboración** mediante un **esquema de calificación (rating scheme)** con **nueve dimensiones** cualitativamente definidas y cuantitativamente puntuadas: (1) mantenimiento de la **comprensión mutua**, (2) **gestión del diálogo**, (3) **intercambio de información**, (4) **consecución de consenso**, (5) **división de tareas**, (6) **gestión del tiempo**, (7) **coordinación técnica**, (8) **interacción recíproca**, (9)
+
+352
+01:24:23,774 --> 01:24:26,599
+orientación a la tarea individual**.
+
+353
+01:24:26,599 --> 01:24:47,474
+El esquema se construyó combinando un enfoque **ascendente** (categorías inducidas empíricamente del análisis de contenido cualitativo de diálogos transcritos) y **descendente** (teoría sobre los roles de la comunicación, el procesamiento conjunto de información, la coordinación, las relaciones interpersonales y la motivación).
+
+354
+01:24:47,644 --> 01:25:19,319
+*Composición.** Resumen + palabras clave (evaluación, colaboración, comunicación, coordinación, procesamiento de información grupal, relación interpersonal, motivación, sistema de calificación, videoconferencia); 1 Introducción (definir características del proceso relevantes para la calidad de la colaboración y desarrollar instrumentos para evaluarlas no es trivial; dos preguntas básicas de todo investigador de procesos colaborativos: qué aspectos del proceso observar y cómo evaluarlos); 2
+
+355
+01:25:19,319 --> 01:25:51,656
+Marco teórico y desarrollo del esquema (enfoque mixto top-down/bottom-up; base de datos: estudiantes de psicología y medicina colaborando en un caso clínico complejo mediante videoconferencia de escritorio; consideraciones teóricas sobre atención mutua (Clark, 1996) como prerrequisito, coordinación de esfuerzos en tareas complejas, relaciones interpersonales constructivas); 3 Elección del método (por qué un esquema de calificación: dos razones —captura la calidad del proceso y permite
+
+356
+01:25:51,656 --> 01:26:27,519
+evaluación cuantitativa fiable—); 4 Evaluación empírica (procedimiento: a todas las díadas se les pidió desarrollar colaborativamente un diagnóstico para un segundo caso en la fase de prueba; **40 díadas**; medidas y procedimiento de calificación —Tabla 4: medidas usadas en la evaluación empírica—; calificadores entrenados); 5 Resultados (fiabilidad entre evaluadores, consistencia interna, validez: correlaciones entre dimensiones —p. ej. "alcanzar el consenso" ↔ "interacción recíproca" 0,53**—
+
+357
+01:26:27,519 --> 01:26:48,531
+análisis factorial/escalamiento); 6 Discusión (el nuevo método puede recomendarse para distintas áreas del CSCL); Conclusión; Apéndices (definiciones operacionales y escalas de cada dimensión —p. ej. Dimensión 2: gestión del diálogo; habilidades técnicas básicas de los socios—); Referencias.
+
+358
+01:26:48,531 --> 01:27:36,081
+*PI que responde.** **PI1 ✔✔✔** (el artículo fundacional: definición, dimensiones y operacionalización de "calidad de la colaboración"; relación con comunicación, coordinación, procesamiento conjunto, motivación e interpersonal), **PI2 ✔✔** (instrumento de medición manual: rating scheme sobre transcripciones; fiabilidad y validez como criterios), **PI4 ✔** (estudio instrumental con 40 díadas; psicología+medicina; videoconferencia), **PI5 ✔** (alcance y recomendaciones de uso), PI3 ✔ (comunidad
+
+359
+01:27:36,081 --> 01:27:43,519
+CSCL/psicología del aprendizaje alemana: Friburgo —Spada—, Ruhr —Rummel—).
+
+360
+01:27:43,519 --> 01:27:49,394
+*Relevancia CSCW.** Imprescindible: el esquema de Meier et al.
+
+361
+01:27:49,394 --> 01:27:53,644
+(2007) y su adaptación de **Rummel et al.
+
+362
+01:27:53,644 --> 01:28:05,531
+2011)** son la *verdad fundamental* con la que se entrenan casi todos los modelos automáticos del corpus (A3, A7, A8, A9, A16, A19).
+
+363
+01:28:05,531 --> 01:28:11,969
+### A22 (pp. 324–328).
+
+364
+01:28:11,969 --> 01:28:18,994
+Using LoRA to Fine-tune Large Language Models for Analyzing Collaborative Argumentation in Classrooms" (fragmento)
+
+365
+01:28:18,994 --> 01:28:24,056
+*Deliang Wang, Gao Wei Chen (Universidad de Hong Kong).
+
+366
+01:28:24,056 --> 01:28:32,794
+L@S '25 (12.ª ACM Conference on Learning @ Scale), Palermo, julio 2025.
+
+367
+01:28:32,794 --> 01:28:44,369
+DOI 10.1145/3698205.3733924.** *(Solo ~5 páginas en el PDF.
+
+368
+01:28:44,369 --> 01:28:45,981
+*
+
+369
+01:28:45,981 --> 01:29:17,044
+*De qué trata.** Ajuste fino **eficiente en parámetros (PEFT/LoRA, framework Unsloth)** de dos LLM de código abierto (**Llama-3.2-3B-Instruct** y **Gemma-2-9B**) para analizar la **argumentación colaborativa** en aulas, usando el corpus **Discussion Tracker** (108 discusiones argumentativas de grupos pequeños y de clase completa) anotado con el marco **CER (Claim–Evidence–Reasoning)**.
+
+370
+01:29:17,212 --> 01:29:51,937
+*Composición (del fragmento).** Título/resumen/CCS + ISBN y DOI (portada); Introducción (la argumentación colaborativa como proceso social de explorar, evaluar, cuestionar y conciliar argumentos; habilidad crucial del siglo XXI); Método (por qué LoRA: el fine-tuning completo es costoso; congelar pesos e inyectar matrices de rango bajo; la preparación de datos anotados con instrucción + contexto es clave; formulación de la instrucción: "Con base en la información proporcionada…"); Resultados (
+
+371
+01:29:51,937 --> 01:30:24,474
+Tabla 2: métricas de rendimiento de Llama-3.2-3B y Gemma-2-9B ajustados —p. ~210—; algunos rendimientos inferiores o comparables a líneas base, con áreas de mejora identificadas); Referencias (incluye trabajos 2024 sobre estrategias discursivas e interacciones socioemocionales en argumentación colaborativa, ChatGPT para detectar movimientos conversacionales, evaluación automatizada del estímulo docente con características emocionales multimodales + ChatGPT).
+
+372
+01:30:24,474 --> 01:30:54,624
+*PI que responde.** **PI2 ✔** (LLMs微调 como nueva vía de automatización del análisis del discurso colaborativo), **PI1 parcial** (argumentación colaborativa como dimensión de la calidad de la colaboración), PI4 ✔ (corpus de aulas; benchmarking de modelos), PI3 ✔ (comunidad ACM L@S/NLP educativo), PI5 parcial (rendimientos mejorables).
+
+373
+01:30:54,624 --> 01:31:05,524
+*Relevancia CSCW.** Representa la ola 2024–25: sustituir pipelines de características por LLMs anotadores.
+
+374
+01:31:05,524 --> 01:31:07,662
+Complementa a A1.
+
+375
+01:31:07,662 --> 01:31:14,512
+### A23 (pp. 329–365).
+
+376
+01:31:14,512 --> 01:31:21,562
+Using Mobile Dual Eye-Tracking to Capture Cycles of Collaboration and Cooperation in Co-located Dyads" (preimpresión)
+
+377
+01:31:21,562 --> 01:31:24,962
+*Tonya Bryant, Bertrand Schneider.
+
+378
+01:31:24,962 --> 01:31:30,387
+Preprint (~36 páginas; manuscrito enviado a revista).
+
+379
+01:31:30,387 --> 01:31:50,599
+*De qué trata.** Estudia la **interacción entre momentos de colaboración y de cooperación** (marco de Abdu & Schwarz, 2020) —área poco explorada— en **díadas colocalizadas** de un makerspace que aprenden a **programar un robot** (entorno por bloques tipo Scratch; tareas de laberinto con giros).
+
+380
+01:31:50,599 --> 01:32:06,587
+Usa **seguimiento ocular dual móvil (Tobii)**, pulseras fisiológicas y sensores de movimiento para capturar la **atención visual conjunta (JVA)** y propone una **nueva medida de "ciclos de colaboración-cooperación" (CCC)**.
+
+381
+01:32:06,748 --> 01:32:40,823
+*Composición.** Resumen + palabras clave (aprendizaje, colaboración, atención visual conjunta, MMLA); 1 Introducción (objetivo: nuevas medidas de colaboración con sensores de alta frecuencia; 3 contribuciones: (1) metodología emergente de eye-tracking dual móvil para JVA en díadas colocalizadas + replicación de que la JVA se correlaciona positivamente con la calidad de la colaboración; (2) análisis cualitativo de la coocurrencia de actividad verbal y JVA en grupos de bajo/alto rendimiento para
+
+382
+01:32:40,823 --> 01:33:14,298
+entender momentos de colaboración vs. cooperación; (3) nueva medida inspirada en ello); 2 Revisión de literatura ("modos" de colaboración; indicadores alternativos con nuevas tecnologías de detección; ir más allá de estudiar la colaboración hacia cómo se despliega; vacío: falta de estudios sobre la interacción colaboración-cooperación); 3 Métodos (RQ1: relación JVA–calidad de colaboración–aprendizaje; RQ2: ¿cómo se manifiestan los ciclos CCC durante un "incidente de trabajo en grupo" (Jordan &
+
+383
+01:33:14,298 --> 01:33:47,998
+Henderson, 2002)?; participantes: díadas; tarea: programación de robot + laberintos —el primer laberinto con una pared y giro a la derecha…—; procedimiento; sensores: eye trackers móviles Tobii, pulseras fisiológicas, sensores de movimiento; el código escrito por la díada se evaluó para determinar teóricamente qué tan bien podría haber realizado la tarea); 4 Análisis de datos (JVA: % de tiempo que el grupo permanece en estado de atención visual conjunta; manejo de datos faltantes; validación
+
+384
+01:33:47,998 --> 01:34:22,873
+con dos estrategias: definición de **Áreas de Interés (AOI)** para dividir la visión…; análisis en 2 rondas: teoría fundamentada (Charmaz, 2006) → libro de códigos; luego codificación de memorandos analíticos evento por evento con el marco de "estructura de eventos"; puntuación de ciclos CCC —ejemplo: Grupo 15 con puntuación 26—); 5 Resultados (tabla comparativa de niveles de JVA por grupo —excepción: Grupo 6—; la mayor parte del trabajo colaborativo coincidió con niveles crecientes de JVA;
+
+385
+01:34:22,873 --> 01:34:50,848
+ejemplos narrativos: miembro izquierdo concentrado en programación y robot mientras el derecho…; matriz de correlación: relación estable entre JVA, calidad de colaboración y ganancias de aprendizaje); 6 Recomendaciones; Discusión y limitaciones (limitaciones relacionadas con la tarea y la muestra; varias limitaciones reconocidas); Conclusión (es posible desarrollar nuevas formas de capturar habilidades del siglo XXI); Referencias (incl.
+
+386
+01:34:50,848 --> 01:34:57,635
+Dillenbourg, Chilitags 2 del lab CHILI/EPFL, Rothman, Zumbach et al.).
+
+387
+01:34:57,635 --> 01:35:49,535
+*PI que responde.** **PI1 ✔✔** (colaboración vs. cooperación como ciclo; JVA como manifestación observable), **PI2 ✔✔** (eye-tracking dual móvil, AOIs, JVA%, fisiología, movimiento; método mixto con grounded theory; medida CCC nueva; automatización media —mucha codificación manual—), **PI4 ✔** (díadas colocalizadas, makerspace/robótica, métodos mixtos), **PI5 ✔✔** (limitaciones explícitas de tarea y muestra), PI3 ✔ (comunidad MMLA/Stanford-Schneider; términos JVA, co-located dyads).
+
+388
+01:35:49,535 --> 01:35:59,160
+*Relevancia CSCW.** El estudio más "micro" del corpus: procesos segundo a segundo de la atención compartida en parejas presenciales.
+
+389
+01:35:59,160 --> 01:36:01,973
+Muy útil para PI1 y PI2.
+
+390
+01:36:01,973 --> 01:36:08,823
+### A24 (pp. 366–382).
+
+391
+01:36:08,823 --> 01:36:17,098
+Using social interaction trace data and context to predict collaboration quality and creative fluency in collaborative design learning environments
+
+392
+01:36:17,098 --> 01:36:25,523
+*Ninger Zhou, Lorraine Kisselburgh, S. Karthik Badam, Senthil Chandrasegaran, Karthik Ramani (Purdue).
+
+393
+01:36:25,523 --> 01:36:33,773
+International Journal of Human-Computer Studies 136:102378 (2020), Elsevier.
+
+394
+01:36:33,940 --> 01:37:10,377
+*De qué trata.** En equipos de **diseño de ingeniería** (estudiantes diseñando un juguete), examina cómo los **datos de interacción social** (audio: superposición de voz, sincronía/índice cíclico, toma de turnos) y los **datos de contexto** (entorno físico: sala privada vs. espacio común abierto; herramienta de dibujo: papel vs. computadora; proximidad/posición) predicen dos resultados: la **calidad de la colaboración** (definida, siguiendo a Lewis, como interacción efectiva en grupos que
+
+395
+01:37:10,377 --> 01:37:17,165
+fomenta la acción interdependiente y el estatus equitativo) y la **fluidez creativa** del equipo.
+
+396
+01:37:17,165 --> 01:37:48,215
+*Composición.** Resumen + información del artículo; 1 Introducción (el diseño colaborativo implica interacción verbal + comunicación visual y material; faltan herramientas metodológicas eficaces para estudiar la dinámica de interacción en entornos de diseño asistido por ordenador; objetivo de la formación en ingeniería: funcionar en equipo con altos niveles de colaboración y fluidez creativa —ABET—); 2 Marco/Trabajos relacionados (definiciones de colaboración de alta calidad y fluidez creativa;
+
+397
+01:37:48,215 --> 01:38:21,540
+señales en entornos de diseño); 3 Método (Figura 1: equipos colaborativos durante una sesión de diseño de juguetes; diseño 2×2: herramienta de dibujo —papel o basada en computadora— × entorno de sala —privada o abierta/pública—; Tabla 2: descripción de las cuatro condiciones de diseño; todos los equipos trabajaron en un espacio común abierto simultáneamente controlando…; captura de audio del equipo + datos de contexto/posición; evaluación de la colaboración y de la creatividad de los productos
+
+398
+01:38:21,540 --> 01:38:55,652
+por jueces); 4 Resultados (regresión **PLS (Partial Least Squares)** con los siete predictores; validación cruzada de exclusión de un elemento con algoritmo NIPALS para modelar la fluidez creativa; Figura 8: valores predichos vs. observados en las 16 observaciones); 5 Discusión (los niveles de **sincronía** —índice cíclico y superposición del habla— se asociaron **negativamente** con los resultados, contra la intuición; qué predictores explican estructura latente); Limitaciones (muestra pequeña:
+
+399
+01:38:55,652 --> 01:39:00,415
+16 observaciones de equipo); Conclusión; Referencias.
+
+400
+01:39:00,415 --> 01:39:46,677
+*PI que responde.** **PI1 ✔✔** (define CQ para equipos de diseño y la vincula con creatividad/fluidez; constructos vecinos: sincronía verbal, interdependencia, equidad de estatus), **PI2 ✔** (métricas de interacción social por audio + datos contextuales/espaciales; PLS-regresión; automatización media-baja), **PI4 ✔** (experimento 2×2 con equipos de diseño de ingeniería en contexto educativo), **PI5 ✔** (muestra pequeña; hallazgos contraintuitivos que requieren replicación), PI3 ✔ (comunidad
+
+401
+01:39:46,677 --> 01:39:54,265
+IJHCS/ingeniería de diseño: términos "team creativity", "creative fluency", "social interaction data").
+
+402
+01:39:54,265 --> 01:40:08,990
+*Relevancia CSCW.** Une el mundo CSCW/HCI con la educación en ingeniería: la colaboración como predictor de resultados creativos, y la sorpresa de que más sincronía no siempre es mejor.
+
+403
+01:40:08,990 --> 01:40:11,502
+## 3.
+
+404
+01:40:11,502 --> 01:40:16,040
+Síntesis por pregunta de investigación (PI1–PI5)
+
+405
+01:40:16,040 --> 01:40:19,090
+### PI1.
+
+406
+01:40:19,090 --> 01:40:28,665
+Cómo se conceptualiza la calidad de la colaboración en entornos colocalizados? (constructos, definiciones, dimensiones, constructos vecinos)
+
+407
+01:40:28,665 --> 01:40:33,040
+*Artículos que la responden (por orden de utilidad
+
+408
+01:40:33,040 --> 01:41:07,765
+*A21 (Meier et al., 2007)** — la base: CQ = proceso colaborativo evaluado en **9 dimensiones** (comprensión mutua, gestión del diálogo, intercambio de información, consenso, división de tareas, gestión del tiempo, coordinación técnica, interacción recíproca, orientación a tarea individual), ancladas en 5 aspectos teóricos: **comunicación, coordinación, procesamiento conjunto de información, relación interpersonal y motivación** (formulación explícita también en **A13**).
+
+409
+01:41:07,765 --> 01:41:27,452
+*A4 (CLAF, IJCSCL 2026)** — la conceptualización **desde la voz del estudiante**: indicadores en capas de proceso/resultado/revisión; la CQ se conecta con **alfabetización colaborativa**, regulación socialmente compartida y uso de retroalimentación.
+
+410
+01:41:27,604 --> 01:41:42,904
+*A10 (Praharaj, capítulo Springer)** — terminología operacional: **indicadores** (eventos de bajo nivel) → **índices** (procesos de alto nivel) → CQ; la igualdad de participación como índice central.
+
+411
+01:41:42,904 --> 01:41:57,291
+*A14 (Liu & Sengers, CSCW)** — conceptualización CSCW de la **coordinación colocalizada**: fisicalidad como ancla; modos "orientado al artefacto" vs. "orientado al espacio".
+
+412
+01:41:57,291 --> 01:42:09,129
+*A23 (Bryant & Schneider)** — micro-conceptualización: **ciclos de colaboración vs. cooperación** y **atención visual conjunta** como manifestación observable.
+
+413
+01:42:09,129 --> 01:42:21,141
+*A24 (Zhou et al., IJHCS)** — CQ en equipos de diseño (acción interdependiente + estatus equitativo, tras Lewis) y su relación con **fluidez creativa**.
+
+414
+01:42:21,141 --> 01:42:32,666
+*A2 (LAK24)** — constructo vecino: **engagement colaborativo individual** (drivers vs. passengers) dentro de la colaboración cara a cara.
+
+415
+01:42:32,666 --> 01:42:43,666
+*A6 (EAIT24)** — constructo vecino: **shared understanding** manifestada en estados de interacción grupal (referencing/following).
+
+416
+01:42:43,666 --> 01:42:53,879
+*A11 (METS)** — constructo vecino: **teamwork quality encarnado** (comunicación + comportamiento espacial) en formación profesional.
+
+417
+01:42:53,879 --> 01:43:02,691
+*A17 (mdRQA)** — teamwork/atención compartida como dinámica temporal (contexto remoto).
+
+418
+01:43:02,691 --> 01:43:11,191
+*A12 (MR-CoCo)** — constructos vecinos de la comunidad VR: **copresencia** y colaboración en parejas.
+
+419
+01:43:11,191 --> 01:43:32,104
+*A3, A7, A8, A9, A16, A19 (línea Tallin)** — usan CQ y dimensiones (adaptación de Rummel et al., 2011 del esquema de Meier) como variable latente medida; **A16** añade subdimensiones como el **flujo de la colaboración** y la cuantificación en continuo.
+
+420
+01:43:32,104 --> 01:44:19,391
+*Mapa rápido de constructos vecinos**: calidad de la colaboración ↔ teamwork quality (A11, A24) ↔ engagement colaborativo (A2, A15) ↔ shared understanding (A6) ↔ atención visual conjunta (A23, A17) ↔ coordinación (A14, A21) ↔ copresencia (A12) ↔ alfabetización colaborativa (A4) ↔ argumentación colaborativa (A22) ↔ fluidez creativa (A24).
+
+421
+01:44:19,391 --> 01:44:22,491
+### PI2.
+
+422
+01:44:22,491 --> 01:44:31,804
+Cómo se mide o evalúa la calidad de la colaboración colocalizada? (métricas, sensores, modalidades, artefactos, automatización)
+
+423
+01:44:31,804 --> 01:44:35,804
+*Artículos que la responden:**
+
+424
+01:44:35,804 --> 01:44:54,766
+*Medición manual/psicométrica**: A21 (rating scheme de 9 dimensiones sobre transcripciones; fiabilidad inter-jueces, consistencia, validez); A11 (evaluación experta de docentes de enfermería como ground truth); A24 (jueces para colaboración y creatividad).
+
+425
+01:44:54,766 --> 01:45:44,854
+*Sensores y modalidades** (censo del corpus): audio grupal (A10, A16, A18, A19, A20), audio individual con micrófonos de solapa/cabeza/insignia (A11, A18), vídeo/webcams (A3, A6, A7), cámara 360° (A5), laboratorio multicámara (A14), eye tracking móvil dual (A23), eye tracking de pantalla (A17), posicionamiento indoor (A11), pulseras fisiológicas y sensores de movimiento (A23), logs digitales: CoTrack/Etherpad (A3, A7, A8, A16), IDE+Git (A15), registros de RA/RM (A12, A14), vídeo de aula +
+
+426
+01:45:44,854 --> 01:45:47,391
+LLM (A1).
+
+427
+01:45:47,391 --> 01:46:33,254
+*Indicadores y métricas**: tiempo de habla e igualdad/Gini (A10, A13, A20), toma de turnos y superposición (A18, A20, A24), VAD+ASR y palabras clave/espacio epistémico con ENA (A20), unidades de acción facial y región bucal (A7), movimiento/postura de cabeza (A7), estados de interacción por reglas habla+mirada (A2, A6), referencing/following y minería de procesos (A6), JVA y AOIs (A23), mdRQA (recurrencia, determinismo) (A17), proximidad/distancia entre manos y formación espacial (A13, A14,
+
+428
+01:46:33,254 --> 01:46:41,516
+A24), cuestionarios: SUS, copresencia, colaboración (A12), CPSS (A14).
+
+429
+01:46:41,516 --> 01:47:18,229
+*Modelado automático**: clasificación supervisada con RF/NB/DT/AdaBoost/SVM (A3, A8, A9, A16, A19), regresión SVR/bosques en continuo con RMSE (A16), PLS/NIPALS (A24), regresión logística + efectos mixtos (A17), reglas transparentes (A2, A6), LLMs: fine-tuning LoRA (A22) y generación de programas que orquestan modelos expertos (A1).
+
+430
+01:47:18,229 --> 01:47:33,254
+Parámetros de diseño documentados: ventanas de 30–240 s (A9), fusión multimodal y pipelines (A8), robustez al ruido (A19), generalización entre contextos (A3, A8).
+
+431
+01:47:33,412 --> 01:47:52,799
+*Artefactos tecnológicos**: CoTrack (A3, A13, A16), ConAn (A5), PAMEL (A13), dashboards/panel de control para docentes (A10, A20, A15), MR-CoCo (A12), interfaz VideoQA con chat+código (A1).
+
+432
+01:47:52,799 --> 01:48:14,874
+*Grado de automatización**: completa (A1, A6, A8, A9, A17, A19, A22), alta con reglas interpretables (A2), semiautomatizada con humano en el bucle (A10, A20), baja/manual (A21, A23, A24, A18 en parte).
+
+433
+01:48:14,874 --> 01:48:18,062
+### PI3.
+
+434
+01:48:18,062 --> 01:48:23,824
+Qué comunidades, foros y grupos producen este conocimiento, y qué términos usan?
+
+435
+01:48:23,824 --> 01:48:28,649
+*Cuatro comunidades claras en tu corpus:**
+
+436
+01:48:28,649 --> 01:48:59,074
+1. **Learning Analytics / MMLA (ISLS + ACM)** — foros: LAK (A2, A8, A9, A11, A17), JLA (A19), CrossMMLA (A16), AIED/EC-TEL (A7), BJET (A3), EAIT (A6), libros Springer (A10), ICALT/CIBDA (A13, A15), CSCL (A18, A21).
+
+437
+01:48:59,074 --> 01:49:12,799
+Términos: *collaboration quality (CQ)*, *co-located/face-to-face collaboration analytics*, *multimodal learning analytics*, *collaboration flow*, *shared understanding*, *indicators/indices*.
+
+438
+01:49:12,799 --> 01:49:16,199
+Grupos: **Tallin Univ.
+
+439
+01:49:16,199 --> 01:49:34,112
++ GSIC/EMIC Valladolid** (Chejara, Prieto, Rodríguez-Triana, Ruiz-Calleja, Kasepalu, Shankar, Dimitriadis + Schneider de Harvard/Stanford); **UCL Knowledge Lab** (Cukurova, Zhou, Suraworachet); **Open Univ.
+
+440
+01:49:34,112 --> 01:49:48,949
+NL + DIPF + Bochum + TU Delft** (Praharaj, Scheffel, Drachsler, Specht); **Monash** (Gašević, Zhao, Martinez-Maldonado); **Colorado Boulder** (D'Mello); **UIUC** (Mercier).
+
+441
+01:49:48,949 --> 01:50:10,449
+2. **HCI / CSCW / interacción multimodal (ACM, IEEE)** — foros: CSCW/PACM HCI (A14), ICMI (A1, A5), TVCG/VR (A12), L@S (A22), IJHCS (A24).
+
+442
+01:50:10,449 --> 01:50:20,749
+Términos: *coordination*, *co-located collaboration*, *co-presence*, *joint (visual) attention*, *teamwork*, *group behavior*, *embodied interaction*.
+
+443
+01:50:20,749 --> 01:50:45,224
+Grupos: **Cornell** (Liu, Sengers), **Stuttgart/DFKI/LMU** (Bulling, Müller, Mayer), **Télécom Paris + Poliba** (Medeiros, Fiorentino), **Stanford/Harvard** (Schneider, Bryant), **HKU** (Wang, Chen), **Purdue** (Ramani, Zhou, Chandrasegaran).
+
+444
+01:50:45,224 --> 01:50:56,287
+3. **CSCL "clásico"/psicología del aprendizaje** — foros: IJCSCL (A4, A21), CSCL conference (A18).
+
+445
+01:50:56,287 --> 01:51:05,874
+Términos: *computer-supported collaborative learning*, *quality of collaboration processes*, *rating scheme*, *collaborative literacy*, *socially shared regulation*.
+
+446
+01:51:05,874 --> 01:51:16,699
+Grupos: **Friburgo/Ruhr** (Meier, Spada, Rummel), **Northwestern** (Worsley, Eze), **Illinois** (Mercier).
+
+447
+01:51:16,699 --> 01:51:40,924
+4. **Educación en ingeniería/diseño y comunidades regionales** — IJHCS/diseño (A24: *creative fluency*, *design teams*), China/ACM CIBDA (A15: *evaluación orientada a procesos*, *human-AI collaboration*), Indiana/UNC/NCSU con AIED (A1: *collaborative problem solving*).
+
+448
+01:51:40,924 --> 01:52:07,824
+*Traducciones del constructo entre comunidades**: collaboration quality (LA) ≈ quality of collaboration processes (CSCL alemán) ≈ teamwork quality (ergonomía/simulación) ≈ coordination quality (CSCW) ≈ collaborative engagement (A2) ≈ calidad de la interacción grupal (A6).
+
+449
+01:52:07,824 --> 01:52:10,987
+### PI4.
+
+450
+01:52:10,987 --> 01:52:14,549
+Qué tipos de estudios y metodologías se utilizan?
+
+451
+01:52:14,549 --> 01:52:19,312
+Diseño | Artículos | Ejemplos de contexto/participantes
+
+452
+01:52:19,312 --> 01:52:41,287
+Experimento controlado (entre condiciones) | A14, A12, A24, A15 | Parejas en laboratorio (bloques vs. RA); 48 adultos en 24 parejas (MR); equipos de diseño de ingeniería (2×2 herramienta×sala); cuasi-experimento con clases paralelas n=40 (programación)
+
+453
+01:52:41,287 --> 01:53:06,187
+Estudio de campo longitudinal en aulas auténticas | A2, A6, A18, A3, A7, A8, A19, A20 | Módulo de posgrado de 10 semanas (34 estudiantes, grupos de 4–5); 18 grupos durante 4 semanas (secundaria, IL, EE. UU.); escuelas de Estonia (FP y general, idiomas/química)
+
+454
+01:53:06,187 --> 01:53:13,987
+Estudio de caso | A16, A23 | 2 grupos en escritura colaborativa; díadas en makerspace de robótica
+
+455
+01:53:13,987 --> 01:53:21,799
+Encuesta a gran escala | A4 | 290 universitarios, 12 semanas con herramienta de analítica de colaboración
+
+456
+01:53:21,799 --> 01:53:34,337
+Desarrollo de herramienta/demo + casos de uso | A5, A1, A12, A15 | ConAn (cámara 360°); VideoQA con LLM; MR-CoCo; DFIF
+
+457
+01:53:34,337 --> 01:53:50,949
+Modelado sobre datos existentes / benchmark | A8, A9, A17, A19, A22 | 11 datasets multicontexto; 279 individuos (tríadas remotas); corpus Discussion Tracker (108 discusiones)
+
+458
+01:53:51,100 --> 01:53:58,562
+Simulación profesional con expertos | A11 | 15 equipos de enfermería en simulación; 3 docentes evaluadores
+
+459
+01:53:58,512 --> 01:54:05,337
+Capítulo de síntesis / tesis | A10, A13 | Revisiones + estudios propios integrados
+
+460
+01:54:05,337 --> 01:54:16,025
+Mixto (cuali+cuan) | A23, A24, A20 | Grounded theory + eye tracking; jueces + regresión PLS; ENA + entrevistas de co-diseño
+
+461
+01:54:16,025 --> 01:54:41,487
+*Procedimientos comunes**: ventanas temporales de 10–240 s; anotación humana con esquemas de Rummel/Meier como verdad fundamental; validación cruzada (k-fold, leave-one-context-out); estadísticos: pruebas t, U de Mann-Whitney, efectos mixtos, correlaciones; cualitativos: grounded theory, análisis de contenido, ENA, minería de procesos.
+
+462
+01:54:41,487 --> 01:54:44,675
+### PI5.
+
+463
+01:54:44,675 --> 01:54:49,775
+Qué limitaciones, trabajos futuros y vacíos identifican los autores?
+
+464
+01:54:49,775 --> 01:54:54,275
+*Vacíos recurrentes (con artículos que los señalan
+
+465
+01:54:54,275 --> 01:55:10,837
+1. **Generalización entre contextos, tareas y escuelas**: los modelos pierden ~25 puntos de precisión al cambiar de escuela (A3); las decisiones de pipeline afectan la transportabilidad (A8); falta validez transcontextual (A6).
+
+466
+01:55:10,837 --> 01:55:24,450
+2. **Datos ruidosos e imperfectos en el mundo real** (frente al laboratorio): degradación del ~50% en modelos de audio con ruido (A19); calidad de datos no garantizada en aulas (A13).
+
+467
+01:55:24,450 --> 01:55:34,675
+3. **Granularidad temporal no resuelta**: qué ventana para qué dimensión (A9); procesos vs. medidas acumuladas (A6).
+
+468
+01:55:34,675 --> 01:55:46,437
+4. **Caja negra vs. transparencia y valor educativo**: modelos precisos pero ininterpretables/inutilizables por docentes (A2, A4, A10).
+
+469
+01:55:46,437 --> 01:55:53,250
+5. **Falta la voz del estudiante** en el diseño de indicadores y retroalimentación (A4).
+
+470
+01:55:53,250 --> 01:56:04,037
+6. **Semiautomatización**: la colaboración automatizada aún requiere humanos (anotación, validación) (A10, A21, A23).
+
+471
+01:56:04,037 --> 01:56:18,112
+7. **Muestras pequeñas / estudios exploratorios sin causalidad**: 2 grupos (A16), 16 observaciones (A24), sin relación causal participación→aprendizaje (A2).
+
+472
+01:56:18,112 --> 01:56:29,350
+8. **Vídeo y señales físicas infrautilizadas** frente al audio/logs (A7); espacialidad y embodiment poco integrados (A11, A14).
+
+473
+01:56:29,350 --> 01:56:41,412
+9. **Limitaciones tecnológicas en RA/RM**: calidad gráfica, dispositivos heterogéneos (A12), necesidad de asistentes IA (trabajo futuro).
+
+474
+01:56:41,412 --> 01:56:52,762
+10. **Ética y privacidad** en MMLA: almacenamiento local, encriptación, declaraciones de innovación responsable (A15, A1, A10).
+
+475
+01:56:52,762 --> 01:57:06,400
+11. **Rendimiento aún inferior al humano** en cuantificación fina de CQ (A16: ~50% de la brecha cerrada; A22: LLMs por debajo de lo esperado en algunas tareas).
+
+476
+01:57:06,400 --> 01:57:18,200
+12. **Del indicador al apoyo**: faltan estudios de cómo los dashboards/feedback mejoran realmente la colaboración en tiempo real (A10, A20, A4).
+
+477
+01:57:18,200 --> 01:57:20,687
+## 4.
+
+478
+01:57:20,687 --> 01:57:23,750
+Anomalías y notas sobre el PDF
+
+479
+01:57:23,750 --> 01:57:40,500
+1. **A16 está duplicado**: pp. 239–246 y 247–254 son dos traducciones automáticas distintas del mismo manuscrito de 8 páginas (verificado por comparación de texto).
+
+480
+01:57:40,500 --> 01:57:55,125
+2. **Fragmentos** (no artículos completos): A13 (3 pp., consorcio doctoral), A18 (2 pp., CSCL22), A22 (~5 pp., L@S25).
+
+481
+01:57:55,125 --> 01:58:10,975
+3. **A1 comienza sin portada**: el PDF arranca a mitad del resumen (p. 1); el título/DOI se recuperaron de ACM DL (pp. 516–525 de ICMI '25).
+
+482
+01:58:10,975 --> 01:58:21,150
+4. **Dos artículos no son colocalizados**: A17 (tríadas remotas de CPS) y A21 (díadas por videoconferencia).
+
+483
+01:58:21,150 --> 01:58:31,900
+A21, no obstante, es la raíz teórica del constructo que usan los estudios colocalizados; A17 aporta método (mdRQA) transferible.
+
+484
+01:58:31,900 --> 01:58:43,912
+5. Todos los textos llevan marca "Machine Translated by Google": **cita siempre las versiones originales en inglés** (usa los DOIs que incluí en cada ficha), no esta traducción.
+
+485
+01:58:43,912 --> 01:58:53,712
+6. Orden de aparición en el PDF ≠ orden temático; este documento los reordena por aparición para que puedas navegar con los números de página.
+
+486
+01:58:53,712 --> 01:58:56,212
+## 5.
+
+487
+01:58:56,212 --> 01:58:59,337
+Glosario mínimo para leer el corpus
+
+488
+01:58:59,337 --> 01:59:07,262
+*CQ (collaboration quality)**: calidad de la colaboración; constructo multidimensional (ver A21).
+
+489
+01:59:07,262 --> 01:59:17,362
+*MMLA**: Multimodal Learning Analytics; analítica que combina varias fuentes de datos (audio, vídeo, logs, sensores).
+
+490
+01:59:17,362 --> 01:59:25,162
+*Co-located / colocalizado / face-to-face**: participantes en el mismo espacio físico.
+
+491
+01:59:25,324 --> 01:59:37,111
+*CSCL**: aprendizaje colaborativo asistido por computadora; **CSCW**: trabajo cooperativo asistido por computadora (comunidad ACM).
+
+492
+01:59:37,061 --> 01:59:44,149
+*Indicador vs. índice** (A10): evento observable de bajo nivel vs. agregado de alto nivel.
+
+493
+01:59:44,149 --> 01:59:53,136
+*CoTrack** (A3/A13/A16): herramienta de captura (Etherpad + audio) del grupo Tallin.
+
+494
+01:59:53,136 --> 02:00:01,061
+*ENA**: Epistemic Network Analysis; grafos de coocurrencia de códigos/palabras (A20).
+
+495
+02:00:01,061 --> 02:00:07,986
+*JVA**: joint visual attention / atención visual conjunta (A23).
+
+496
+02:00:07,986 --> 02:00:14,486
+*mdRQA**: multidimensional Recurrence Quantification Analysis (A17).
+
+497
+02:00:14,486 --> 02:00:23,111
+*VAD / ASR**: detección de actividad de voz / reconocimiento automático del habla (A20).
+
+498
+02:00:23,111 --> 02:00:29,436
+*AU**: Action Units (unidades de acción facial, sistema FACS) (A7).
+
+499
+02:00:29,436 --> 02:00:44,036
+*SVR / RF / DT / NB / AdaBoost / PLS**: algoritmos de ML usados para estimar CQ (A16, A19, A24).
+
+500
+02:00:44,036 --> 02:00:50,786
+*LoRA / PEFT**: ajuste fino eficiente de LLMs (A22).
+
+501
+02:00:50,786 --> 02:00:57,736
+*FoLA2**: método de co-diseño de actividades de aprendizaje con analítica (A20).
+
+502
+02:00:57,736 --> 02:01:08,024
+*SUS**: System Usability Scale (A12); **CPSS**: Creative Product Semantic Scale (A14/A24).
+
+503
+02:01:08,024 --> 02:01:15,599
+*Ventana temporal**: segmento de tiempo sobre el que se agregan características antes de clasificar (A9).
+
+504
+02:01:15,599 --> 02:01:22,749
+*Documento generado a partir del análisis completo del PDF (382 pp.).
+
+505
+02:01:22,749 --> 02:01:26,586
+Las páginas indicadas son las del PDF compilado.
+
+506
+02:01:26,586 --> 02:01:31,349
+Para cada artículo se incluye el DOI de la versión original.*
+

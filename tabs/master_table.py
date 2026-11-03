@@ -56,18 +56,21 @@ def processing_tab():
     with col_refresh:
         if st.button("Actualizar vista", use_container_width=True):
             st.session_state["master_df"] = load_master_dataframe(OUTPUT_FOLDER / MASTER_FILENAME)
+            st.session_state["master_df_version"] = st.session_state.get("master_df_version", 0) + 1
             st.rerun()
 
     if run_processing:
         with st.spinner("Leyendo fuentes y normalizando registros..."):
             df, errors = process_folder(INPUT_FOLDER)
             st.session_state["master_df"] = df
+            st.session_state["master_df_version"] = st.session_state.get("master_df_version", 0) + 1
             st.session_state["processing_errors"] = errors
             output_file = safe_save_master_dataframe(df)
         st.success(f"Tabla generada en {output_file}.")
 
     if load_existing:
         st.session_state["master_df"] = load_master_dataframe(OUTPUT_FOLDER / MASTER_FILENAME)
+        st.session_state["master_df_version"] = st.session_state.get("master_df_version", 0) + 1
         st.success("Excel cargado desde output.")
 
     if "master_df" not in st.session_state:
@@ -78,22 +81,32 @@ def processing_tab():
     st.session_state["master_df"] = df
     metric_cards(df)
 
+    version = st.session_state.get("master_df_version", 0)
     edited_df = st.data_editor(
         df,
+        key=f"master_data_editor_{version}",
         use_container_width=True,
         hide_index=True,
         num_rows="dynamic",
         column_config={
             "Abstract": st.column_config.TextColumn("Abstract", width="large"),
             "URL": st.column_config.LinkColumn("URL"),
+            "Revista": st.column_config.TextColumn("Revista / Publicación", width="medium"),
             "CadenaBusqueda": st.column_config.TextColumn("Cadena de Búsqueda", width="medium"),
+            "Seleccion_Manual": st.column_config.NumberColumn(
+                "Selección Manual",
+                help="1 = Incluido, -1 = Excluido, 0 = Pendiente",
+                format="%d",
+            ),
+            "Comentarios": st.column_config.TextColumn("Comentarios", width="large"),
+            "F0_Score": st.column_config.NumberColumn("Score F0", format="%d"),
         },
     )
-    update_total_score(edited_df)
-    st.session_state["master_df"] = edited_df
 
     if save_edits:
         update_total_score(edited_df)
+        st.session_state["master_df"] = edited_df
+        st.session_state["master_df_version"] = version + 1
         output_file = safe_save_master_dataframe(edited_df)
         st.success(f"Cambios guardados en {output_file}.")
 

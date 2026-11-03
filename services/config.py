@@ -8,6 +8,8 @@ CRITERIA_FILE = CONFIG_FOLDER / "criteria.json"
 KEYWORDS_FILE = CONFIG_FOLDER / "keywords.json"
 LLM_CONFIG_FILE = CONFIG_FOLDER / "llm_config.json"
 SEARCH_QUERIES_FILE = CONFIG_FOLDER / "search_queries.json"
+MANUAL_SCREENING_STATE_FILE = CONFIG_FOLDER / "manual_screening_state.json"
+TELEGRAM_CONFIG_FILE = CONFIG_FOLDER / "telegram_config.json"
 
 
 def load_criteria():
@@ -99,4 +101,72 @@ def save_search_queries(queries):
     CONFIG_FOLDER.mkdir(exist_ok=True)
     with open(SEARCH_QUERIES_FILE, "w", encoding="utf-8") as f:
         json.dump(queries, f, indent=2, ensure_ascii=False)
+
+
+def load_manual_screening_state():
+    """Carga el estado del progreso de selección manual (último registro revisado, filtros)."""
+    default = {
+        "last_index": 0,
+        "last_doi": "",
+        "last_titulo": "",
+        "last_decision": 0,
+        "sort_by": "F0_Score (Mayor a menor)",
+        "filter_by": "Todos los registros",
+        "auto_advance": True,
+    }
+    if not MANUAL_SCREENING_STATE_FILE.exists():
+        return default
+    try:
+        with open(MANUAL_SCREENING_STATE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return {**default, **data}
+            return default
+    except (OSError, json.JSONDecodeError):
+        return default
+
+
+def save_manual_screening_state(state):
+    """Persiste el estado actual de la selección manual en JSON."""
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    try:
+        with open(MANUAL_SCREENING_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+    except OSError:
+        pass
+
+
+def load_telegram_config():
+    """Carga configuración del bot de Telegram para cribado manual."""
+    default = {
+        "bot_token": "",
+        "allowed_chat_ids": [],
+        "auto_advance": True,
+        "auto_send_audio": False,
+        "show_abstract": True,
+        "default_lang": "es",
+        "tts_voice": "es-ES-ElviraNeural",
+        "is_enabled": False,
+    }
+    if not TELEGRAM_CONFIG_FILE.exists():
+        return default
+    try:
+        with open(TELEGRAM_CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return {**default, **data}
+            return default
+    except (OSError, json.JSONDecodeError):
+        return default
+
+
+def save_telegram_config(config):
+    """Persiste configuración del bot de Telegram en JSON."""
+    CONFIG_FOLDER.mkdir(exist_ok=True)
+    try:
+        with open(TELEGRAM_CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+    except OSError:
+        pass
+
 

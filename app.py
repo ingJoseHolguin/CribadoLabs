@@ -10,6 +10,7 @@ from tabs.master_table import processing_tab
 from tabs.criteria import criteria_tab
 from tabs.llm_settings import llm_settings_tab
 from tabs.screening import progressive_screening_tab
+from tabs.manual_screening import manual_screening_tab
 from tabs.translation import translation_tab
 from tabs.filtering import filtering_tab
 from tabs.audio_summarizer import audio_summarizer_tab
@@ -47,22 +48,35 @@ def main():
         st.header("Arquitectura")
         st.write("1. Cargar fuentes")
         st.write("2. Procesar y editar")
-        st.write("3. Configurar LLM")
-        st.write("4. Traducir contenido")
-        st.write("5. Cribado progresivo")
-        st.write("6. Filtrar resultados (PRISMA)")
-        st.write("7. Audio & Resumen")
+        st.write("3. Criterios")
+        st.write("4. Cribado progresivo")
+        st.write("5. Selección manual")
+        st.write("6. Configurar LLM")
+        st.write("7. Traducir contenido")
+        st.write("8. Filtrar resultados (PRISMA)")
+        st.write("9. Audio & Resumen")
 
-    tab_sources, tab_processing, tab_criteria, tab_llm, tab_screening, tab_translation, tab_filtering, tab_audio = st.tabs(
+    (
+        tab_sources,
+        tab_processing,
+        tab_criteria,
+        tab_screening,
+        tab_manual,
+        tab_llm,
+        tab_translation,
+        tab_filtering,
+        tab_audio,
+    ) = st.tabs(
         [
             "Fuentes",
             "Tabla maestra",
             "Criterios",
-            "LLM",
             "Cribado Progresivo",
+            "Selección Manual",
+            "LLM",
             "Traducción",
             "Filtrado (PRISMA)",
-            "Audio & Resumen"
+            "Audio & Resumen",
         ]
     )
 
@@ -72,10 +86,12 @@ def main():
         processing_tab()
     with tab_criteria:
         criteria_tab()
-    with tab_llm:
-        llm_settings_tab()
     with tab_screening:
         progressive_screening_tab()
+    with tab_manual:
+        manual_screening_tab()
+    with tab_llm:
+        llm_settings_tab()
     with tab_translation:
         translation_tab()
     with tab_filtering:
